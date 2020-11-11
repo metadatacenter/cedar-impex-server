@@ -4,13 +4,15 @@ import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceApplication;
 import org.metadatacenter.config.CedarConfig;
-import org.metadatacenter.model.ServerName;
 import org.metadatacenter.submission.health.ImpexServerHealthCheck;
+import org.metadatacenter.submission.resources.IndexResource;
+import org.metadatacenter.submission.resources.NcbiCairrSubmissionServerResource;
+import org.metadatacenter.submission.resources.NcbiGenericSubmissionServerResource;
+import org.metadatacenter.model.ServerName;
 import org.metadatacenter.submission.ncbi.queue.NcbiSubmissionExecutorService;
 import org.metadatacenter.submission.ncbi.queue.NcbiSubmissionQueueProcessor;
 import org.metadatacenter.submission.ncbi.queue.NcbiSubmissionQueueService;
 import org.metadatacenter.submission.notifications.StatusNotifier;
-import org.metadatacenter.submission.resources.*;
 
 public class ImpexServerApplication extends CedarMicroserviceApplication<ImpexServerConfiguration> {
 
@@ -23,7 +25,7 @@ public class ImpexServerApplication extends CedarMicroserviceApplication<ImpexSe
 
   @Override
   protected ServerName getServerName() {
-    return ServerName.SUBMISSION;
+    return ServerName.IMPEX;
   }
 
   @Override
@@ -34,8 +36,7 @@ public class ImpexServerApplication extends CedarMicroserviceApplication<ImpexSe
   public void initializeApp() {
     ncbiSubmissionQueueService = new NcbiSubmissionQueueService(cedarConfig.getCacheConfig().getPersistent());
 
-    NcbiSubmissionQueueService ncbiSubmissionQueueService =
-        new NcbiSubmissionQueueService(cedarConfig.getCacheConfig().getPersistent());
+    NcbiSubmissionQueueService ncbiSubmissionQueueService = new NcbiSubmissionQueueService(cedarConfig.getCacheConfig().getPersistent());
 
     NcbiGenericSubmissionServerResource.injectServices(ncbiSubmissionQueueService);
     NcbiCairrSubmissionServerResource.injectServices(ncbiSubmissionQueueService);
@@ -53,20 +54,18 @@ public class ImpexServerApplication extends CedarMicroserviceApplication<ImpexSe
 
     // Register resources
 
-    final NcbiGenericSubmissionServerResource ncbiSubmissionServerResource =
-        new NcbiGenericSubmissionServerResource(cedarConfig);
+    final NcbiGenericSubmissionServerResource ncbiSubmissionServerResource = new NcbiGenericSubmissionServerResource(cedarConfig);
     environment.jersey().register(ncbiSubmissionServerResource);
 
-    final NcbiCairrSubmissionServerResource cairrSubmissionServerResource =
-        new NcbiCairrSubmissionServerResource(cedarConfig);
+    final NcbiCairrSubmissionServerResource cairrSubmissionServerResource = new NcbiCairrSubmissionServerResource(cedarConfig);
     environment.jersey().register(cairrSubmissionServerResource);
 
     final ImpexServerHealthCheck healthCheck = new ImpexServerHealthCheck();
     environment.healthChecks().register("message", healthCheck);
 
     // NCBI submission processor
-    NcbiSubmissionQueueProcessor ncbiSubmissionProcessor =
-        new NcbiSubmissionQueueProcessor(ncbiSubmissionQueueService, ncbiSubmissionExecutorService);
+    NcbiSubmissionQueueProcessor ncbiSubmissionProcessor = new NcbiSubmissionQueueProcessor(ncbiSubmissionQueueService,
+        ncbiSubmissionExecutorService);
     environment.lifecycle().manage(ncbiSubmissionProcessor);
   }
 }
