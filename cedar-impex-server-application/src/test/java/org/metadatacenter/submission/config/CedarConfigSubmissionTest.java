@@ -1,4 +1,4 @@
-package org.metadatacenter.submission.config;
+package org.metadatacenter.impex.config;
 
 import org.junit.Assert;
 import org.junit.Before;

@@ -113,7 +113,7 @@
         <artifactId>jsonschema2pojo-maven-plugin</artifactId>
         <configuration>
           <sourceDirectory>${basedir}/src/main/resources/json-schema</sourceDirectory>
-          <targetPackage>org.metadatacenter.submission</targetPackage>
+          <targetPackage>org.metadatacenter.impex</targetPackage>
         </configuration>
         <executions>
           <execution>
