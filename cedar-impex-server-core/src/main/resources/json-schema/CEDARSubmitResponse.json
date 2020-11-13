@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean"
+    },
+    "error": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "submissionID": {
+      "type": "string"
+    },
+    "statusURL": {
+      "type": "string", "format": "url"
+    }
+  }
+}

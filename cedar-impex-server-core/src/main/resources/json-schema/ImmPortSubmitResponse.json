@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "dateCreated": {
+      "type": "integer"
+    },
+    "dateLastUpdated": {
+      "type": "integer"
+    },
+    "lastUpdatedBy": {
+      "type": "string"
+    },
+    "packageName": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "uploadTicketNumber": {
+      "type": "string"
+    },
+    "uploadTicketStatusUiUrl": {
+      "type": "string"
+    },
+    "username": {
+      "type": "string"
+    },
+    "workspaceId": {
+      "type": "integer"
+    },
+    "workspaceName": {
+      "type": "string"
+    }
+  }
+}
