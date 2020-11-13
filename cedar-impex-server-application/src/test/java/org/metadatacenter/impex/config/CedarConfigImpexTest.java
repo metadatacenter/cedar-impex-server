@@ -12,7 +12,7 @@ import org.metadatacenter.util.test.TestUtil;
 import java.util.HashMap;
 import java.util.Map;
 
-public class CedarConfigSubmissionTest {
+public class CedarConfigImpexTest {
 
   @Before
   public void setEnvironment() {
@@ -45,9 +45,9 @@ public class CedarConfigSubmissionTest {
     env.put(CedarEnvironmentVariable.CEDAR_REDIS_PERSISTENT_HOST.getName(), "127.0.0.1");
     env.put(CedarEnvironmentVariable.CEDAR_REDIS_PERSISTENT_PORT.getName(), "6379");
 
-    env.put(CedarEnvironmentVariable.CEDAR_SUBMISSION_HTTP_PORT.getName(), "9010");
-    env.put(CedarEnvironmentVariable.CEDAR_SUBMISSION_ADMIN_PORT.getName(), "9110");
-    env.put(CedarEnvironmentVariable.CEDAR_SUBMISSION_STOP_PORT.getName(), "9210");
+    env.put(CedarEnvironmentVariable.CEDAR_IMPEX_HTTP_PORT.getName(), "9008");
+    env.put(CedarEnvironmentVariable.CEDAR_IMPEX_ADMIN_PORT.getName(), "9108");
+    env.put(CedarEnvironmentVariable.CEDAR_IMPEX_STOP_PORT.getName(), "9208");
 
     env.put(CedarEnvironmentVariable.CEDAR_MESSAGING_HTTP_PORT.getName(), "9012");
 
@@ -58,7 +58,7 @@ public class CedarConfigSubmissionTest {
 
   @Test
   public void testGetInstance() throws Exception {
-    SystemComponent systemComponent = SystemComponent.SERVER_SUBMISSION;
+    SystemComponent systemComponent = SystemComponent.SERVER_IMPEX;
     Map<String, String> environment = CedarEnvironmentVariableProvider.getFor(systemComponent);
     CedarConfig instance = CedarConfig.getInstance(environment);
     Assert.assertNotNull(instance);
