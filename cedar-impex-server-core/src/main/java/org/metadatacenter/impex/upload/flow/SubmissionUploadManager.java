@@ -43,10 +43,9 @@ public class SubmissionUploadManager {
     // If the file does not exist in the submission, create it
     if (!submissionUploadStatus.getFilesUploadStatus().containsKey(fileId)) {
       String fileLocalPath = FlowUploadUtil.getFileLocalFolderPath(submissionFolderPath, data.flowFilename);
-      // Check if the file is a metadata file
-      boolean isMetadataFile = FlowUploadUtil.isMetadataFile(data);
+
       FileUploadStatus fileUploadStatus =
-          new FileUploadStatus(fileTotalChunks, 0, fileLocalPath, isMetadataFile);
+          new FileUploadStatus(fileTotalChunks, 0, fileLocalPath);
       submissionUploadStatus.getFilesUploadStatus().put(fileId, fileUploadStatus);
     }
 

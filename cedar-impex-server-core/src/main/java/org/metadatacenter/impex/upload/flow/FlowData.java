@@ -12,7 +12,6 @@ public class FlowData {
 
   public String submissionId;
   public long totalFilesCount;
-  public List<String> metadataFiles; // comma separated string of metadata file names
   public long flowChunkNumber;
   public long flowChunkSize;
   public long flowCurrentChunkSize;
@@ -24,13 +23,12 @@ public class FlowData {
   public InputStream flowFileInputStream;
   public Map<String, String> additionalParameters; // Stores additional (submission-specific) parameters
 
-  public FlowData(String submissionId, long totalFilesCount, List<String> metadataFiles, long flowChunkNumber, long
+  public FlowData(String submissionId, long totalFilesCount, long flowChunkNumber, long
       flowChunkSize, long flowCurrentChunkSize, long flowTotalSize, String flowIdentifier, String flowFilename,
                   String flowRelativePath, long flowTotalChunks, InputStream flowFileInputStream, Map<String, String>
                       additionalParameters) {
     this.submissionId = submissionId;
     this.totalFilesCount = totalFilesCount;
-    this.metadataFiles = metadataFiles;
     this.flowChunkNumber = flowChunkNumber;
     this.flowChunkSize = flowChunkSize;
     this.flowCurrentChunkSize = flowCurrentChunkSize;
@@ -57,14 +55,6 @@ public class FlowData {
 
   public void setTotalFilesCount(long totalFilesCount) {
     this.totalFilesCount = totalFilesCount;
-  }
-
-  public List<String> getMetadataFiles() {
-    return metadataFiles;
-  }
-
-  public void setMetadataFiles(List<String> metadataFiles) {
-    this.metadataFiles = metadataFiles;
   }
 
   public long getFlowChunkNumber() {

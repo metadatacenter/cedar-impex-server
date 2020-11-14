@@ -27,7 +27,6 @@ public class FlowUploadUtil {
 
     String submissionId = null;
     long numberOfFiles = -1;
-    List<String> metadataFiles = null;
     long flowChunkNumber = -1;
     long flowChunkSize = -1;
     long flowCurrentChunkSize = -1;
@@ -45,8 +44,6 @@ public class FlowUploadUtil {
           submissionId = item.getString();
         } else if (item.getFieldName().equals("numberOfFiles")) {
           numberOfFiles = Long.parseLong(item.getString());
-        } else if (item.getFieldName().equals("metadataFiles")) {
-          metadataFiles = commaSeparatedStringToList(item.getString());
         } else if (item.getFieldName().equals("flowChunkNumber")) {
           flowChunkNumber = Long.parseLong(item.getString());
         } else if (item.getFieldName().equals("flowChunkSize")) {
@@ -83,8 +80,6 @@ public class FlowUploadUtil {
       throw new InternalError("Missing field: numberOfFiles");
     } else if (flowChunkNumber == -1) {
       throw new InternalError("Missing field: flowChunkNumber");
-    } else if (metadataFiles == null) {
-      throw new InternalError("Missing field: metadataFiles");
     } else if (flowChunkSize == -1) {
       throw new InternalError("Missing field: flowChunkSize");
     } else if (flowCurrentChunkSize == -1) {
@@ -101,7 +96,7 @@ public class FlowUploadUtil {
       throw new InternalError("Missing field: flowTotalChunks");
     }
 
-    return new FlowData(submissionId, numberOfFiles, metadataFiles, flowChunkNumber, flowChunkSize,
+    return new FlowData(submissionId, numberOfFiles, flowChunkNumber, flowChunkSize,
         flowCurrentChunkSize,
         flowTotalSize, flowIdentifier, flowFilename, flowRelativePath, flowTotalChunks, flowFileInputStream,
         additionalParameters);
@@ -154,6 +149,12 @@ public class FlowUploadUtil {
         submissionId;
   }
 
+  public static String getImpexLocalFolderPath(String baseFolderName, String userId, String submissionId) {
+    String userFolder = FlowUploadUtil.getLastFragmentOfUrl(userId);
+    return System.getProperty("java.io.tmpdir") + "/" + baseFolderName + "/user_" + userFolder + "/submission_" +
+        submissionId;
+  }
+
   public static String getFileLocalFolderPath(String submissionLocalFolderPath, String fileName) {
     return submissionLocalFolderPath + "/" + fileName;
   }
@@ -185,10 +186,6 @@ public class FlowUploadUtil {
       //Remove whitespaces and split by comma
       return Arrays.asList(string.split("\\s*,\\s*"));
     }
-  }
-
-  public static boolean isMetadataFile(FlowData data) {
-    return data.getMetadataFiles().contains(data.getFlowFilename());
   }
 
 }
