@@ -1,20 +1,20 @@
-package org.metadatacenter.impex.upload.flow;
+package org.metadatacenter.impex.upload;
 
 import java.util.Map;
 
-public class SubmissionUploadStatus {
+public class UploadStatus {
 
   private long totalFilesCount;
   private long uploadedFilesCount;
   private Map<String, FileUploadStatus> filesUploadStatus;
-  private String submissionLocalPath;
+  private String uploadLocalPath;
 
-  public SubmissionUploadStatus(long totalFilesCount, long uploadedFilesCount, Map<String, FileUploadStatus>
-      filesUploadStatus, String submissionLocalPath) {
+  public UploadStatus(long totalFilesCount, long uploadedFilesCount, Map<String, FileUploadStatus>
+      filesUploadStatus, String uploadLocalPath) {
     this.totalFilesCount = totalFilesCount;
     this.uploadedFilesCount = uploadedFilesCount;
     this.filesUploadStatus = filesUploadStatus;
-    this.submissionLocalPath = submissionLocalPath;
+    this.uploadLocalPath = uploadLocalPath;
   }
 
   public long getTotalFilesCount() {
@@ -41,11 +41,11 @@ public class SubmissionUploadStatus {
     this.filesUploadStatus = filesUploadStatus;
   }
 
-  public String getSubmissionLocalPath() {
-    return submissionLocalPath;
+  public String getUploadLocalPath() {
+    return uploadLocalPath;
   }
 
-  public void setSubmissionLocalPath(String submissionLocalPath) {
-    this.submissionLocalPath = submissionLocalPath;
+  public void setUploadLocalPath(String uploadLocalPath) {
+    this.uploadLocalPath = uploadLocalPath;
   }
 }

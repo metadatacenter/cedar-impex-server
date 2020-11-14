@@ -1,39 +1,35 @@
 package org.metadatacenter.impex.resources;
 
 import com.codahale.metrics.annotation.Timed;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
-import org.joda.time.DateTimeZone;
+import org.hibernate.validator.constraints.NotEmpty;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceResource;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.exception.CedarException;
-import org.metadatacenter.impex.exception.SubmissionInstanceNotFoundException;
-import org.metadatacenter.impex.ncbi.NcbiConstants;
-import org.metadatacenter.impex.ncbi.NcbiSubmission;
-import org.metadatacenter.impex.ncbi.NcbiSubmissionUtil;
-import org.metadatacenter.impex.upload.flow.FlowData;
-import org.metadatacenter.impex.upload.flow.FlowUploadUtil;
-import org.metadatacenter.impex.upload.flow.SubmissionUploadManager;
+import org.metadatacenter.impex.exception.UploadInstanceNotFoundException;
+import org.metadatacenter.impex.imp.cadsr.CadsrImportStatus;
+import org.metadatacenter.impex.imp.cadsr.CadsrImportStatusManager;
+import org.metadatacenter.impex.status.ImportStatusManager;
+import org.metadatacenter.impex.upload.FlowData;
+import org.metadatacenter.impex.upload.FlowUploadUtil;
+import org.metadatacenter.impex.upload.UploadManager;
 import org.metadatacenter.rest.context.CedarRequestContext;
+import org.metadatacenter.util.json.JsonMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.xml.bind.JAXBException;
-import javax.xml.datatype.DatatypeConfigurationException;
 import java.io.IOException;
 
 import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 
 @Path("/command")
 @Produces(MediaType.APPLICATION_JSON)
-public class ImpexServerResource
-    extends CedarMicroserviceResource {
+public class ImpexServerResource extends CedarMicroserviceResource {
 
   final static Logger logger = LoggerFactory.getLogger(ImpexServerResource.class);
 
@@ -45,8 +41,7 @@ public class ImpexServerResource
   @Timed
   @Path("/import-cadsr-forms")
   @Consumes(MediaType.MULTIPART_FORM_DATA)
-  public Response importCadsrForm()
-      throws CedarException {
+  public Response importCadsrForm() throws CedarException {
 
     CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
@@ -61,25 +56,37 @@ public class ImpexServerResource
         // Every request contains a file chunk that we will save in the appropriate position of a local file
         // TODO: read base folder name from constants file
         String submissionLocalFolderPath = FlowUploadUtil
-            .getSubmissionLocalFolderPath("impex-upload", userId, data.getSubmissionId());
+            .getUploadLocalFolderPath("impex-upload", userId, data.getUploadId());
         String filePath = FlowUploadUtil
             .saveToLocalFile(data, userId, request.getContentLength(), submissionLocalFolderPath);
-        logger.info("Saving file chunk to: " + filePath);
-        // Update the submission upload status
-        SubmissionUploadManager.getInstance().updateStatus(data, submissionLocalFolderPath);
+        //logger.info("Saving file chunk to: " + filePath);
 
-        // If the submission upload is complete, trigger the FTP submission to the NCBI servers
-        if (SubmissionUploadManager.getInstance().isSubmissionUploadComplete(data.getSubmissionId())) {
-          logger.info("Submission successfully uploaded to CEDAR: ");
-          logger.info("  submission id: " + data.getSubmissionId());
-          logger.info("  submission local folder: " + submissionLocalFolderPath);
-          logger.info("  no. files: " + data.getTotalFilesCount());
-          // Submit the files to the NCBI
-          String ncbiFolderName = FlowUploadUtil.getDateBasedFolderName(DateTimeZone.UTC);
-          logger.info("Starting submission from CEDAR to the NCBI. Destination folder: " + ncbiFolderName);
+        // Update the submission upload status
+        UploadManager.getInstance().updateStatus(data, submissionLocalFolderPath);
+
+        // When the upload is complete, trigger the import process
+        if (UploadManager.getInstance().isUploadComplete(data.getUploadId())) {
+          logger.info("File(s) successfully uploaded to the Impex server: ");
+          logger.info("  - Upload id: " + data.getUploadId());
+          logger.info("  - Local path: " + submissionLocalFolderPath);
+          logger.info("  - No. files: " + data.getTotalFilesCount());
+          logger.info("  - Uploaded file names: ");
+          for (String fileName : UploadManager.getInstance().getUploadFileNames(data.getUploadId())) {
+            logger.info("    - " + fileName);
+          }
+
+          //--start import--
+          String destinationCedarFolderId = null; // TODO
+          CadsrImportStatusManager.getInstance().addStatus(data.getUploadId(), destinationCedarFolderId);
+
+          // Import files into CEDAR
+          for (String path : UploadManager.getInstance().getUploadFilePaths(data.getUploadId())) {
+            logger.info("Importing file: " + path);
+          }
+          //--end import-
 
           // Remove the submission from the status map
-          SubmissionUploadManager.getInstance().removeSubmissionStatus(data.getSubmissionId());
+          UploadManager.getInstance().removeUploadStatus(data.getUploadId());
         }
 
       } catch (IOException | FileUploadException /*SubmissionInstanceNotFoundException*/ e) {
@@ -88,7 +95,7 @@ public class ImpexServerResource
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
       } catch (IllegalAccessException e) {
         e.printStackTrace();
-      } catch (SubmissionInstanceNotFoundException e) {
+      } catch (UploadInstanceNotFoundException e) {
         e.printStackTrace();
       }
       return Response.ok().build();
@@ -97,16 +104,23 @@ public class ImpexServerResource
     }
   }
 
-  @POST
+  @GET
   @Timed
   @Path("/import-cadsr-forms-status")
-  public Response importStatus()
-      throws CedarException {
+  public Response importStatus(@QueryParam("uploadId") @NotEmpty String uploadId) throws CedarException {
 
     CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
 
-    return Response.status(Response.Status.BAD_REQUEST).build();
+    try {
+      CadsrImportStatus status = CadsrImportStatusManager.getInstance().getStatus(uploadId);
+      JsonNode output = JsonMapper.MAPPER.valueToTree(status);
+      return Response.ok().entity(output).build();
+    }
+    catch (Exception e) { // TODO: refine exception
+      return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+    }
+
   }
 
 

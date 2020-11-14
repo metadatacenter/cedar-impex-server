@@ -1,4 +1,4 @@
-package org.metadatacenter.impex.upload.flow;
+package org.metadatacenter.impex.upload;
 
 public class FileUploadStatus {
 

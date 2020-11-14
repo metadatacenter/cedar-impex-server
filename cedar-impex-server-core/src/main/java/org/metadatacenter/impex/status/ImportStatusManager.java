@@ -1,7 +1,5 @@
 package org.metadatacenter.impex.status;
 
-import org.metadatacenter.config.CedarConfig;
-import org.metadatacenter.impex.notifications.StatusNotifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,31 +10,23 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-// TODO Use Redis queue
-// TODO Need to add insertion time in descriptor and clean old ones
-
-public class SubmissionStatusManager {
-  final static Logger logger = LoggerFactory.getLogger(SubmissionStatusManager.class);
-  private static SubmissionStatusManager singleInstance;
+public class ImportStatusManager {
+  final static Logger logger = LoggerFactory.getLogger(ImportStatusManager.class);
+  private static ImportStatusManager singleInstance;
   private final ExecutorService executor;
-  private final ConcurrentHashMap<String, SubmissionStatusDescriptor> submissions = new ConcurrentHashMap<>();
-  // TODO: this is not nice. Find another way of having these variable available to call the messaging server
-  private CedarConfig cedarConfig;
 
-  private SubmissionStatusManager() {
+  private final ConcurrentHashMap<String, SubmissionStatusDescriptor> submissions = new ConcurrentHashMap<>();
+
+  private ImportStatusManager() {
     this.executor = Executors.newFixedThreadPool(10);
   }
 
-  public static synchronized SubmissionStatusManager getInstance() {
+  public static synchronized ImportStatusManager getInstance() {
     if (singleInstance == null) {
-      singleInstance = new SubmissionStatusManager();
+      singleInstance = new ImportStatusManager();
       singleInstance.start();
     }
     return singleInstance;
-  }
-
-  public void setCedarConfig(CedarConfig cedarConfig) {
-    this.cedarConfig = cedarConfig;
   }
 
   private void start() {
@@ -63,8 +53,6 @@ public class SubmissionStatusManager {
 
     this.submissions.put(submissionID, submissionStatusDescriptor);
 
-    notifyUser(submissionStatusDescriptor);
-
     return submissionID;
   }
 
@@ -87,7 +75,7 @@ public class SubmissionStatusManager {
       if ((currentStatus.getSubmissionState() != newStatus.getSubmissionState()) ||
           (!currentStatus.getStatusMessage().equals(newStatus.getStatusMessage()) &&
               !currentStatus.getSubmissionState().equals(SubmissionState.SUBMITTED))) {
-        notifyUser(newSubmissionStatusDescriptor);
+        //notifyUser(newSubmissionStatusDescriptor);
       }
 
       logger.info("Submission status: " + newStatus.getSummary());
@@ -124,11 +112,4 @@ public class SubmissionStatusManager {
     }
   }
 
-  private void notifyUser(SubmissionStatusDescriptor submissionStatusDescriptor) {
-    logger.info("Notifying user for submission " + submissionStatusDescriptor.getSubmissionID() + "; status = "
-        + submissionStatusDescriptor.getSubmissionStatus().getSubmissionState() + ", message = "
-        + submissionStatusDescriptor.getSubmissionStatus().getStatusMessage());
-
-    StatusNotifier.getInstance().sendMessage(submissionStatusDescriptor);
-  }
 }

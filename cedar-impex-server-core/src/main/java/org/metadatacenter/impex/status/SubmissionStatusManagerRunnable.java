@@ -13,10 +13,10 @@ public class SubmissionStatusManagerRunnable implements Runnable {
   private static final int NUMBER_OF_THREADS = 10;
   private static final int CHECK_INTERVAL = 5000;
 
-  private final SubmissionStatusManager submissionStatusManager;
+  private final ImportStatusManager submissionStatusManager;
 
-  public SubmissionStatusManagerRunnable(SubmissionStatusManager submissionStatusManager) {
-    this.submissionStatusManager = submissionStatusManager;
+  public SubmissionStatusManagerRunnable(ImportStatusManager importStatusManager) {
+    this.submissionStatusManager = importStatusManager;
   }
 
   @Override

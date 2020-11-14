@@ -1,4 +1,4 @@
-package org.metadatacenter.impex.upload.flow;
+package org.metadatacenter.impex.upload;
 
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileUploadException;
@@ -25,7 +25,7 @@ public class FlowUploadUtil {
     // Extract all the files or form items that were received within the multipart/form-data POST request
     List<FileItem> fileItems = new ServletFileUpload(new DiskFileItemFactory()).parseRequest(request);
 
-    String submissionId = null;
+    String uploadId = null;
     long numberOfFiles = -1;
     long flowChunkNumber = -1;
     long flowChunkSize = -1;
@@ -40,8 +40,8 @@ public class FlowUploadUtil {
 
     for (FileItem item : fileItems) {
       if (item.isFormField()) {
-        if (item.getFieldName().equals("submissionId")) {
-          submissionId = item.getString();
+        if (item.getFieldName().equals("uploadId")) {
+          uploadId = item.getString();
         } else if (item.getFieldName().equals("numberOfFiles")) {
           numberOfFiles = Long.parseLong(item.getString());
         } else if (item.getFieldName().equals("flowChunkNumber")) {
@@ -74,8 +74,8 @@ public class FlowUploadUtil {
     }
 
     // Throw an exception if any of the expected fields is missing
-    if (submissionId == null) {
-      throw new InternalError("Missing field: submissionId");
+    if (uploadId == null) {
+      throw new InternalError("Missing field: uploadId");
     } else if (numberOfFiles == -1) {
       throw new InternalError("Missing field: numberOfFiles");
     } else if (flowChunkNumber == -1) {
@@ -96,7 +96,7 @@ public class FlowUploadUtil {
       throw new InternalError("Missing field: flowTotalChunks");
     }
 
-    return new FlowData(submissionId, numberOfFiles, flowChunkNumber, flowChunkSize,
+    return new FlowData(uploadId, numberOfFiles, flowChunkNumber, flowChunkSize,
         flowCurrentChunkSize,
         flowTotalSize, flowIdentifier, flowFilename, flowRelativePath, flowTotalChunks, flowFileInputStream,
         additionalParameters);
@@ -105,13 +105,10 @@ public class FlowUploadUtil {
 
   public static String saveToLocalFile(FlowData data, String userId, int contentLength, String folderPath) throws
       IOException {
-    //File submissionLocalFolder = new File(folderPath);
-//    if (!submissionLocalFolder.exists()) {
-//      submissionLocalFolder.mkdirs();
-//    }
+
     String fileLocalFolderPath = FlowUploadUtil.getFileLocalFolderPath(folderPath, data.flowFilename);
     File file = new File(fileLocalFolderPath);
-    logger.info("Local file path: " + fileLocalFolderPath);
+    //logger.info("Local file path: " + fileLocalFolderPath);
     if (!file.getParentFile().exists()) {
       file.getParentFile().mkdirs();
     }
@@ -143,49 +140,17 @@ public class FlowUploadUtil {
     raf.close();
   }
 
-  public static String getSubmissionLocalFolderPath(String baseFolderName, String userId, String submissionId) {
+  public static String getUploadLocalFolderPath(String baseFolderName, String userId, String uploadId) {
     String userFolder = FlowUploadUtil.getLastFragmentOfUrl(userId);
-    return System.getProperty("java.io.tmpdir") + "/" + baseFolderName + "/user_" + userFolder + "/submission_" +
-        submissionId;
+    return System.getProperty("java.io.tmpdir") + "/" + baseFolderName + "/user_" + userFolder + "/upload_" +
+        uploadId;
   }
 
-  public static String getImpexLocalFolderPath(String baseFolderName, String userId, String submissionId) {
-    String userFolder = FlowUploadUtil.getLastFragmentOfUrl(userId);
-    return System.getProperty("java.io.tmpdir") + "/" + baseFolderName + "/user_" + userFolder + "/submission_" +
-        submissionId;
-  }
-
-  public static String getFileLocalFolderPath(String submissionLocalFolderPath, String fileName) {
-    return submissionLocalFolderPath + "/" + fileName;
-  }
-
-//  public static List<String> getLocalPathsOfMetadataFiles(String submissionId) {
-//    List<String> paths = new ArrayList<>();
-//    Map<String, FileUploadStatus> filesUploadStatus = SubmissionUploadManager.getInstance()
-//        .getSubmissionsUploadStatus(submissionId).getFilesUploadStatus();
-//    for (Map.Entry<String, FileUploadStatus> entry : filesUploadStatus.entrySet()) {
-//      if (entry.getValue().isMetadataFile()) {
-//        paths.add(entry.getValue().getFileLocalPath());
-//      }
-//    }
-//    return paths;
-//  }
-
-  public static String getDateBasedFolderName(DateTimeZone dateTimeZone) {
-    return DateTime.now(dateTimeZone).toString().replace(":", "-");
+  public static String getFileLocalFolderPath(String uploadLocalFolderPath, String fileName) {
+    return uploadLocalFolderPath + "/" + fileName;
   }
 
   public static String getLastFragmentOfUrl(String url) {
     return url.substring(url.lastIndexOf("/") + 1, url.length());
   }
-
-  public static List<String> commaSeparatedStringToList(String string) {
-    if (string.trim().length() == 0) {
-      return new ArrayList<>();
-    } else {
-      //Remove whitespaces and split by comma
-      return Arrays.asList(string.split("\\s*,\\s*"));
-    }
-  }
-
 }
