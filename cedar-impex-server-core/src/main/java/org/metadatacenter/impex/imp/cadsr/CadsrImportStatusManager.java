@@ -46,20 +46,4 @@ public class CadsrImportStatusManager {
     return importStatus.get(uploadId);
   }
 
-//  public synchronized void setStatus(String uploadId, String fileName, ImportStatus status) {
-//
-//    if (!importStatus.containsKey(uploadId)) {
-//
-//    }
-//    else {
-//      CadsrImportStatus s = importStatus.get(uploadId);
-//      s.
-//    }
-//
-//
-//
-//  }
-
-
-
 }

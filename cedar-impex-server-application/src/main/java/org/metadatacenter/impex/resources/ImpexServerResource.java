@@ -5,13 +5,17 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.hibernate.validator.constraints.NotEmpty;
+import org.metadatacenter.cadsr.form.schema.Form;
+import org.metadatacenter.cadsr.ingestor.form.FormUtil;
+import org.metadatacenter.cadsr.ingestor.util.CedarServices;
+import org.metadatacenter.cadsr.ingestor.util.Constants;
+import org.metadatacenter.cadsr.ingestor.util.GeneralUtil;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceResource;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.impex.exception.UploadInstanceNotFoundException;
 import org.metadatacenter.impex.imp.cadsr.CadsrImportStatus;
 import org.metadatacenter.impex.imp.cadsr.CadsrImportStatusManager;
-import org.metadatacenter.impex.status.ImportStatusManager;
 import org.metadatacenter.impex.upload.FlowData;
 import org.metadatacenter.impex.upload.FlowUploadUtil;
 import org.metadatacenter.impex.upload.UploadManager;
@@ -23,7 +27,10 @@ import org.slf4j.LoggerFactory;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.xml.bind.JAXBException;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Map;
 
 import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 
@@ -76,13 +83,24 @@ public class ImpexServerResource extends CedarMicroserviceResource {
           }
 
           //--start import--
-          String destinationCedarFolderId = null; // TODO
-          CadsrImportStatusManager.getInstance().addStatus(data.getUploadId(), destinationCedarFolderId);
+          String cedarFolderId = c.getCedarUser().getHomeFolderId();
+
+          CadsrImportStatusManager.getInstance().addStatus(data.getUploadId(), cedarFolderId);
 
           // Import files into CEDAR
-          for (String path : UploadManager.getInstance().getUploadFilePaths(data.getUploadId())) {
-            logger.info("Importing file: " + path);
+          for (String formFilePath : UploadManager.getInstance().getUploadFilePaths(data.getUploadId())) {
+            logger.info("Importing file: " + formFilePath);
+            Form form = FormUtil.getForm(new FileInputStream(formFilePath));
+            Map templateMap = FormUtil.getTemplateMapFromForm(form);
+
+
+            // TODO: cedarConfig.getHost instead of using CedarEnvironment
+
+            String apiKey = c.getCedarUser().getFirstActiveApiKey();
+            CedarServices.createTemplate(templateMap, cedarFolderId, Constants.CedarEnvironment.LOCAL, apiKey);
+            System.out.println(GeneralUtil.convertMapToJson(templateMap));
           }
+
           //--end import-
 
           // Remove the submission from the status map
@@ -90,12 +108,13 @@ public class ImpexServerResource extends CedarMicroserviceResource {
         }
 
       } catch (IOException | FileUploadException /*SubmissionInstanceNotFoundException*/ e) {
-
         logger.error(e.getMessage(), e);
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
       } catch (IllegalAccessException e) {
         e.printStackTrace();
       } catch (UploadInstanceNotFoundException e) {
+        e.printStackTrace();
+      } catch (JAXBException e) {
         e.printStackTrace();
       }
       return Response.ok().build();
