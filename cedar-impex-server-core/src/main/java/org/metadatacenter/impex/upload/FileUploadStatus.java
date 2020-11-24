@@ -1,17 +1,15 @@
-package org.metadatacenter.impex.upload.flow;
+package org.metadatacenter.impex.upload;
 
 public class FileUploadStatus {
 
   private long fileTotalChunks;
   private long fileUploadedChunks;
   private String fileLocalPath;
-  private boolean isMetadataFile;
 
-  public FileUploadStatus(long fileTotalChunks, long fileUploadedChunks, String fileLocalPath, boolean isMetadataFile) {
+  public FileUploadStatus(long fileTotalChunks, long fileUploadedChunks, String fileLocalPath) {
     this.fileTotalChunks = fileTotalChunks;
     this.fileUploadedChunks = fileUploadedChunks;
     this.fileLocalPath = fileLocalPath;
-    this.isMetadataFile = isMetadataFile;
   }
 
   public long getFileTotalChunks() {
@@ -38,11 +36,4 @@ public class FileUploadStatus {
     this.fileLocalPath = fileLocalPath;
   }
 
-  public boolean isMetadataFile() {
-    return isMetadataFile;
-  }
-
-  public void setMetadataFile(boolean metadataFile) {
-    isMetadataFile = metadataFile;
-  }
 }

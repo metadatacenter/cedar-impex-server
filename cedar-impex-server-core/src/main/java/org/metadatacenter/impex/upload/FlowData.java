@@ -1,4 +1,4 @@
-package org.metadatacenter.impex.upload.flow;
+package org.metadatacenter.impex.upload;
 
 import java.io.InputStream;
 import java.util.List;
@@ -10,9 +10,8 @@ import java.util.Map;
  */
 public class FlowData {
 
-  public String submissionId;
+  public String uploadId;
   public long totalFilesCount;
-  public List<String> metadataFiles; // comma separated string of metadata file names
   public long flowChunkNumber;
   public long flowChunkSize;
   public long flowCurrentChunkSize;
@@ -22,15 +21,14 @@ public class FlowData {
   public String flowRelativePath;
   public long flowTotalChunks;
   public InputStream flowFileInputStream;
-  public Map<String, String> additionalParameters; // Stores additional (submission-specific) parameters
+  public Map<String, String> additionalParameters;
 
-  public FlowData(String submissionId, long totalFilesCount, List<String> metadataFiles, long flowChunkNumber, long
+  public FlowData(String uploadId, long totalFilesCount, long flowChunkNumber, long
       flowChunkSize, long flowCurrentChunkSize, long flowTotalSize, String flowIdentifier, String flowFilename,
                   String flowRelativePath, long flowTotalChunks, InputStream flowFileInputStream, Map<String, String>
                       additionalParameters) {
-    this.submissionId = submissionId;
+    this.uploadId = uploadId;
     this.totalFilesCount = totalFilesCount;
-    this.metadataFiles = metadataFiles;
     this.flowChunkNumber = flowChunkNumber;
     this.flowChunkSize = flowChunkSize;
     this.flowCurrentChunkSize = flowCurrentChunkSize;
@@ -43,13 +41,11 @@ public class FlowData {
     this.additionalParameters = additionalParameters;
   }
 
-  public String getSubmissionId() {
-    return submissionId;
+  public String getUploadId() {
+    return uploadId;
   }
 
-  public void setSubmissionId(String submissionId) {
-    this.submissionId = submissionId;
-  }
+  public void setUploadId(String uploadId) { this.uploadId = uploadId; }
 
   public long getTotalFilesCount() {
     return totalFilesCount;
@@ -57,14 +53,6 @@ public class FlowData {
 
   public void setTotalFilesCount(long totalFilesCount) {
     this.totalFilesCount = totalFilesCount;
-  }
-
-  public List<String> getMetadataFiles() {
-    return metadataFiles;
-  }
-
-  public void setMetadataFiles(List<String> metadataFiles) {
-    this.metadataFiles = metadataFiles;
   }
 
   public long getFlowChunkNumber() {
