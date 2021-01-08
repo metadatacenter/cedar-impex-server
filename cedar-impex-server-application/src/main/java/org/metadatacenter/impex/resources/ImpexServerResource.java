@@ -7,6 +7,7 @@ import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.metadatacenter.cadsr.form.schema.Form;
 import org.metadatacenter.cadsr.ingestor.form.FormUtil;
+import org.metadatacenter.cadsr.ingestor.util.CedarServerUtil;
 import org.metadatacenter.cadsr.ingestor.util.CedarServices;
 import org.metadatacenter.cadsr.ingestor.util.Constants;
 import org.metadatacenter.cadsr.ingestor.util.GeneralUtil;
@@ -95,9 +96,9 @@ public class ImpexServerResource extends CedarMicroserviceResource {
 
 
             // TODO: cedarConfig.getHost instead of using CedarEnvironment
-
+            Constants.CedarEnvironment cedarEnvironment = CedarServerUtil.toCedarEnvironment(cedarConfig.getHost());
             String apiKey = c.getCedarUser().getFirstActiveApiKey();
-            CedarServices.createTemplate(templateMap, cedarFolderId, Constants.CedarEnvironment.LOCAL, apiKey);
+            CedarServices.createTemplate(templateMap, cedarFolderId, cedarEnvironment, apiKey);
             System.out.println(GeneralUtil.convertMapToJson(templateMap));
           }
 

@@ -12,13 +12,12 @@ notifications:
     on_success: change
     on_failure: always
     secure: xSIYhhwtzd+DV5oHEiT3ZVVCKsVlabQ7DMjx6xrq5XZtNBlsLSq6FhHJY37rbfI//6jv2PPZS2OUgNvhmDeiCrWbN6cIXZWkOVHcizfkKLvENLwnqvY+RU4gbwRvTfYEs+WPsl7iRRIahjKHGJHNuSnPSOwQ68eMr60WCSvakRX3ZOA0NgDW6v+MwUL9oTK25ArPhd0D98q5PVuvHmPTK/nc/CHjAJKIhrxqtgMb2PXYwX1YgEnHxbVarbVUqJsJ1Wi0t5PWvf6nLGPSp97f5mt7E68G+J+i18gGh9d/LWSpz8b1qOkxqB7xZwFOmp2Z0OyCNP0PeXmEKozdXMaEa5oi1eeIbot1VjjWrX9eL8b4JGLCR7cTLwZ1Zw7mZi3vTVSyqe9UEBZgGQAkixC0Y93TBRgstsv5/wDu2M4tIn68vKtCFRBnViJmau5UikYl0EukzzLB+LuJLZ2HgkhngwTxMdNIpXVDNRvMgRXMBfKYUmIneGNEAS2DJHlm6LDkGUpD4nBVJs1JJ07lRv/w9ithypLHgfOIWWtthr3JLuq0jvjJaVT91vxGcrUhLsXYnQbcy2l5yDXOLi+PA9UY0O/51m2t2hNojsZg2Eu0dNSipH7wZgGI7peO5hqAEx4F5IqlWBopSfHVd2M3CpyRp6yMMGbvZam1zE5RSg093F0=
-install: "[ ${TRAVIS_PULL_REQUEST} = 'false' ] && mvn -DskipTests=false clean deploy
-  --settings .m2/travis-settings.xml"
-script: "[ ${TRAVIS_PULL_REQUEST} = 'false' ] && mvn -DskipTests=true clean --settings
-  .m2/travis-settings.xml"
+install: "[ ${TRAVIS_PULL_REQUEST} = 'false' ] && mvn -DskipTests=false clean deploy --settings .m2/travis-settings.xml"
+script: "[ ${TRAVIS_PULL_REQUEST} = 'false' ] && mvn -DskipTests=true clean --settings .m2/travis-settings.xml"
 env:
   global:
   - CEDAR_HOST=metadatacenter.orgx
+<<<<<<< HEAD
   - CEDAR_ADMIN_USER_API_KEY=1234
   - CEDAR_NCBI_SRA_FTP_HOST=ftpHost
   - CEDAR_NCBI_SRA_FTP_USER=ftpUser
