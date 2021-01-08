@@ -9,15 +9,14 @@ branches:
   - master
 notifications:
   slack:
-    on_success: change
-    on_failure: always
-    secure: xSIYhhwtzd+DV5oHEiT3ZVVCKsVlabQ7DMjx6xrq5XZtNBlsLSq6FhHJY37rbfI//6jv2PPZS2OUgNvhmDeiCrWbN6cIXZWkOVHcizfkKLvENLwnqvY+RU4gbwRvTfYEs+WPsl7iRRIahjKHGJHNuSnPSOwQ68eMr60WCSvakRX3ZOA0NgDW6v+MwUL9oTK25ArPhd0D98q5PVuvHmPTK/nc/CHjAJKIhrxqtgMb2PXYwX1YgEnHxbVarbVUqJsJ1Wi0t5PWvf6nLGPSp97f5mt7E68G+J+i18gGh9d/LWSpz8b1qOkxqB7xZwFOmp2Z0OyCNP0PeXmEKozdXMaEa5oi1eeIbot1VjjWrX9eL8b4JGLCR7cTLwZ1Zw7mZi3vTVSyqe9UEBZgGQAkixC0Y93TBRgstsv5/wDu2M4tIn68vKtCFRBnViJmau5UikYl0EukzzLB+LuJLZ2HgkhngwTxMdNIpXVDNRvMgRXMBfKYUmIneGNEAS2DJHlm6LDkGUpD4nBVJs1JJ07lRv/w9ithypLHgfOIWWtthr3JLuq0jvjJaVT91vxGcrUhLsXYnQbcy2l5yDXOLi+PA9UY0O/51m2t2hNojsZg2Eu0dNSipH7wZgGI7peO5hqAEx4F5IqlWBopSfHVd2M3CpyRp6yMMGbvZam1zE5RSg093F0=
-install: "[ ${TRAVIS_PULL_REQUEST} = 'false' ] && mvn -DskipTests=false clean deploy --settings .m2/travis-settings.xml"
-script: "[ ${TRAVIS_PULL_REQUEST} = 'false' ] && mvn -DskipTests=true clean --settings .m2/travis-settings.xml"
+    secure: IRE99tIJ3brgytOp9FZw9fYoyHwZUb1hKDBHOP36CjBPG29XI7jtDZZZau16tA/GJ0H0pg+kCW1i17/VeedE+DaaVOk/U6ndWFbf+QZWXjKS8pzZfSbKmq13mhz5cvovSsCrr8nS/DNrZj9yP1moXtfpetZCAf8vS/VsDDFX6/kZnEwsNXz5liEKhNFJRZSaZ5u8kJAZnRycbnD5MqblhP0xAa4YvksP84+0tQNn1GmF/zGJEs3pd5Yi7BHLyRhraYPXfSkVWQYjklXwMjT9BDYtn6+Yj3nNWtFSy6Jv2Gp75lTqxXcDoe2ORPb7sfGifp1v4Txd8gi5QgaXOX9UableFR/muRyM4SADKMBiXiADtSqmiXuxqTVYO9NtCRSkpCoE607sptqOc93mgcHQbeWK/sthg0XPr/Gkg13d/sYcSWJ1cCuW5ntc7fb29SqIaCzpDcK4L3G5BSchbiEx14ucib8lvzWgip0W2GgYm+tN8qngCBPwE0RdnjiQXJruL8fFIpVFPUh+Ri7nIrVd6I/ZNmuPfKEhQU3lt6/Tgn/2JZGvNR8L4h1nKiID+27v6yw/Zg93oVXSoKTFbGtH2XePuvXNTpoNAtc4aqMkr6/JccGHwOXfRY4d3PQw84ZVfGysRXHXLfXiomTqLwuKSX3dZ7tpNkZn3Quu583dQss=
+install: "[ ${TRAVIS_PULL_REQUEST} = 'false' ] && mvn -DskipTests=false clean deploy
+  --settings .m2/travis-settings.xml"
+script: "[ ${TRAVIS_PULL_REQUEST} = 'false' ] && mvn -DskipTests=true clean --settings
+  .m2/travis-settings.xml"
 env:
   global:
   - CEDAR_HOST=metadatacenter.orgx
-<<<<<<< HEAD
   - CEDAR_ADMIN_USER_API_KEY=1234
   - CEDAR_NCBI_SRA_FTP_HOST=ftpHost
   - CEDAR_NCBI_SRA_FTP_USER=ftpUser
