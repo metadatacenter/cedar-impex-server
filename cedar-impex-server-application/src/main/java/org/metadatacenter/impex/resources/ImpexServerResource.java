@@ -96,9 +96,9 @@ public class ImpexServerResource extends CedarMicroserviceResource {
 
 
             // TODO: cedarConfig.getHost instead of using CedarEnvironment
-            Constants.CedarServer cedarServer = CedarServerUtil.toCedarServerFromHostName(cedarConfig.getHost());
+            Constants.CedarEnvironment cedarEnvironment = CedarServerUtil.toCedarEnvironment(cedarConfig.getHost());
             String apiKey = c.getCedarUser().getFirstActiveApiKey();
-            CedarServices.createTemplate(templateMap, cedarFolderId, cedarServer, apiKey);
+            CedarServices.createTemplate(templateMap, cedarFolderId, cedarEnvironment, apiKey);
             System.out.println(GeneralUtil.convertMapToJson(templateMap));
           }
 
