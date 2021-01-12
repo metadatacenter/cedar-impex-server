@@ -93,13 +93,10 @@ public class ImpexServerResource extends CedarMicroserviceResource {
             logger.info("Importing file: " + formFilePath);
             Form form = FormUtil.getForm(new FileInputStream(formFilePath));
             Map templateMap = FormUtil.getTemplateMapFromForm(form);
-
-
-            // TODO: cedarConfig.getHost instead of using CedarEnvironment
-            Constants.CedarEnvironment cedarEnvironment = CedarServerUtil.toCedarEnvironment(cedarConfig.getHost());
+            
+            Constants.CedarServer cedarServer = CedarServerUtil.toCedarServerFromHostName(cedarConfig.getHost());
             String apiKey = c.getCedarUser().getFirstActiveApiKey();
-            CedarServices.createTemplate(templateMap, cedarFolderId, cedarEnvironment, apiKey);
-            System.out.println(GeneralUtil.convertMapToJson(templateMap));
+            CedarServices.createTemplate(templateMap, cedarFolderId, cedarServer, apiKey);
           }
 
           //--end import-
