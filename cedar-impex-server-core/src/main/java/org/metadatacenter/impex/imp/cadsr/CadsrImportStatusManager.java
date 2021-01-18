@@ -30,7 +30,7 @@ public class CadsrImportStatusManager {
   }
 
   // Generate import status from upload status
-  public synchronized void addStatus(String uploadId, String destinationCedarFolderId) {
+  public synchronized void add(String uploadId, String destinationCedarFolderId) {
     UploadStatus uploadStatus = UploadManager.getInstance().getUploadStatus(uploadId);
     Map<String, CadsrFormImportStatus> formsImportStatus = new HashMap<>();
 
@@ -42,7 +42,11 @@ public class CadsrImportStatusManager {
     importStatus.put(uploadId, new CadsrImportStatus(uploadId, formsImportStatus, destinationCedarFolderId));
   }
 
-  public CadsrImportStatus getStatus(String uploadId) {
+  public boolean exists(String uploadId) {
+    return importStatus.containsKey(uploadId);
+  }
+
+  public CadsrImportStatus get(String uploadId) {
     return importStatus.get(uploadId);
   }
 

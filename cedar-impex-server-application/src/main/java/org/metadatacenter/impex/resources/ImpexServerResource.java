@@ -21,6 +21,7 @@ import org.metadatacenter.impex.upload.FlowData;
 import org.metadatacenter.impex.upload.FlowUploadUtil;
 import org.metadatacenter.impex.upload.UploadManager;
 import org.metadatacenter.rest.context.CedarRequestContext;
+import org.metadatacenter.util.http.CedarResponse;
 import org.metadatacenter.util.json.JsonMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,14 +87,14 @@ public class ImpexServerResource extends CedarMicroserviceResource {
           //--start import--
           String cedarFolderId = c.getCedarUser().getHomeFolderId();
 
-          CadsrImportStatusManager.getInstance().addStatus(data.getUploadId(), cedarFolderId);
+          CadsrImportStatusManager.getInstance().add(data.getUploadId(), cedarFolderId);
 
           // Import files into CEDAR
           for (String formFilePath : UploadManager.getInstance().getUploadFilePaths(data.getUploadId())) {
             logger.info("Importing file: " + formFilePath);
             Form form = FormUtil.getForm(new FileInputStream(formFilePath));
             Map templateMap = FormUtil.getTemplateMapFromForm(form);
-            
+
             Constants.CedarServer cedarServer = CedarServerUtil.toCedarServerFromHostName(cedarConfig.getHost());
             String apiKey = c.getCedarUser().getFirstActiveApiKey();
             CedarServices.createTemplate(templateMap, cedarFolderId, cedarServer, apiKey);
@@ -130,16 +131,16 @@ public class ImpexServerResource extends CedarMicroserviceResource {
     c.must(c.user()).be(LoggedIn);
 
     try {
-      CadsrImportStatus status = CadsrImportStatusManager.getInstance().getStatus(uploadId);
-      JsonNode output = JsonMapper.MAPPER.valueToTree(status);
-      return Response.ok().entity(output).build();
+      if (!CadsrImportStatusManager.getInstance().exists(uploadId)) {
+        return CedarResponse.notFound().errorMessage("The specified uploadId cannot be found").id(uploadId).build();
+      } else {
+        CadsrImportStatus status = CadsrImportStatusManager.getInstance().get(uploadId);
+        JsonNode output = JsonMapper.MAPPER.valueToTree(status);
+        return Response.ok().entity(output).build();
+      }
+    } catch (Exception e) {
+      return CedarResponse.internalServerError().exception(e).build();
     }
-    catch (Exception e) { // TODO: refine exception
-      return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
-    }
-
   }
-
-
 }
 
