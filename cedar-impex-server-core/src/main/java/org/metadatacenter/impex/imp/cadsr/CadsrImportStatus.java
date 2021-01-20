@@ -5,13 +5,13 @@ import java.util.Map;
 public class CadsrImportStatus {
 
   private String uploadId;
-  private Map<String, CadsrFormImportStatus> formsImportStatus; // the String stores the file name (e.g., form1.xml)
+  private Map<String, CadsrFileImportStatus> filesImportStatus; // the String stores the file name (e.g., form1.xml)
   private String destinationCedarFolderId;
 
-  public CadsrImportStatus(String uploadId, Map<String, CadsrFormImportStatus> formsImportStatus,
+  public CadsrImportStatus(String uploadId, Map<String, CadsrFileImportStatus> filesImportStatus,
                            String destinationCedarFolderId) {
     this.uploadId = uploadId;
-    this.formsImportStatus = formsImportStatus;
+    this.filesImportStatus = filesImportStatus;
     this.destinationCedarFolderId = destinationCedarFolderId;
   }
 
@@ -19,12 +19,12 @@ public class CadsrImportStatus {
 
   public void setUploadId(String uploadId) { this.uploadId = uploadId; }
 
-  public Map<String, CadsrFormImportStatus> getFormsImportStatus() {
-    return formsImportStatus;
+  public Map<String, CadsrFileImportStatus> getFilesImportStatus() {
+    return filesImportStatus;
   }
 
-  public void setFormsImportStatus(Map<String, CadsrFormImportStatus> formsImportStatus) {
-    this.formsImportStatus = formsImportStatus;
+  public void setFilesImportStatus(Map<String, CadsrFileImportStatus> filesImportStatus) {
+    this.filesImportStatus = filesImportStatus;
   }
 
   public String getDestinationCedarFolderId() {

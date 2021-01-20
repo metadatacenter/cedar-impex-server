@@ -17,9 +17,11 @@ import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.impex.exception.UploadInstanceNotFoundException;
 import org.metadatacenter.impex.imp.cadsr.CadsrImportStatus;
 import org.metadatacenter.impex.imp.cadsr.CadsrImportStatusManager;
+import org.metadatacenter.impex.imp.cadsr.CadsrImportStatusManager.ImportStatus;
 import org.metadatacenter.impex.upload.FlowData;
 import org.metadatacenter.impex.upload.FlowUploadUtil;
 import org.metadatacenter.impex.upload.UploadManager;
+import org.metadatacenter.impex.util.ImpexUtil;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.util.http.CedarResponse;
 import org.metadatacenter.util.json.JsonMapper;
@@ -84,25 +86,29 @@ public class ImpexServerResource extends CedarMicroserviceResource {
             logger.info("    - " + fileName);
           }
 
-          //--start import--
           String cedarFolderId = c.getCedarUser().getHomeFolderId();
 
-          CadsrImportStatusManager.getInstance().add(data.getUploadId(), cedarFolderId);
+          // Set import status to 'PENDING' for all the files that are part of the upload
+          CadsrImportStatusManager.getInstance().initImportStatus(data.getUploadId(), cedarFolderId);
 
           // Import files into CEDAR
           for (String formFilePath : UploadManager.getInstance().getUploadFilePaths(data.getUploadId())) {
+            // Set status to IN_PROGRESS
+            String fileName = ImpexUtil.getFileNameFromFilePath(formFilePath);
+            CadsrImportStatusManager.getInstance().setStatus(data.getUploadId(), fileName, ImportStatus.IN_PROGRESS);
             logger.info("Importing file: " + formFilePath);
+            // Translate for to CEDAR template
             Form form = FormUtil.getForm(new FileInputStream(formFilePath));
             Map templateMap = FormUtil.getTemplateMapFromForm(form);
-
+            // Upload template to CEDAR
             Constants.CedarServer cedarServer = CedarServerUtil.toCedarServerFromHostName(cedarConfig.getHost());
             String apiKey = c.getCedarUser().getFirstActiveApiKey();
             CedarServices.createTemplate(templateMap, cedarFolderId, cedarServer, apiKey);
+            // Set status to COMPLETE
+            CadsrImportStatusManager.getInstance().setStatus(data.getUploadId(), fileName, ImportStatus.COMPLETE);
           }
 
-          //--end import-
-
-          // Remove the submission from the status map
+          // Remove the upload from the status map
           UploadManager.getInstance().removeUploadStatus(data.getUploadId());
         }
 
@@ -134,7 +140,7 @@ public class ImpexServerResource extends CedarMicroserviceResource {
       if (!CadsrImportStatusManager.getInstance().exists(uploadId)) {
         return CedarResponse.notFound().errorMessage("The specified uploadId cannot be found").id(uploadId).build();
       } else {
-        CadsrImportStatus status = CadsrImportStatusManager.getInstance().get(uploadId);
+        CadsrImportStatus status = CadsrImportStatusManager.getInstance().getStatus(uploadId);
         JsonNode output = JsonMapper.MAPPER.valueToTree(status);
         return Response.ok().entity(output).build();
       }
