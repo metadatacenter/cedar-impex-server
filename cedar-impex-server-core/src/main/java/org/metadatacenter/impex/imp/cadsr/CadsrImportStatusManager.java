@@ -8,7 +8,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -25,16 +27,19 @@ public class CadsrImportStatusManager {
   }
 
   // Imports older than this threshold will be removed from the map
-  private final long REMOVE_OLD_UPLOADS_THRESHOLD_MINUTES = 10;
-  // Frequency to check if there are any imports that can be removed from the map
-  private final long REMOVE_OLD_UPLOADS_PERIOD_MINUTES = 15;
+  private final long CLEAN_THRESHOLD_1_MINUTES = 10; // Main threshold, used to clean completed imports
+  private final long CLEAN_THRESHOLD_2_MINUTES = 60; // Much longer, to avoid keeping errored imports in the map
+  // Frequency used to check if there are any imports that can be removed from the map
+  private final long CLEAN_DELAY_MINUTES = 10;
 
   private static CadsrImportStatusManager singleInstance;
-  private Map<String, CadsrImportStatus> importStatus = new HashMap<>(); // uploadId -> CadsrImportStatus
+  private Map<String, CadsrImportStatus> importStatus; // uploadId -> CadsrImportStatus
+  private ScheduledExecutorService executor;
 
   // Single instance
   private CadsrImportStatusManager() {
-    initUploadsCleaner();
+    importStatus = new HashMap<>();
+    initUploadsCleanerExecutor();
   }
 
   public static synchronized CadsrImportStatusManager getInstance() {
@@ -47,28 +52,39 @@ public class CadsrImportStatusManager {
   /**
    * Uses an executor to clear the older items in the importStatus map periodically
    */
-  public void initUploadsCleaner() {
-    ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-    Runnable clearTask = () -> {
+  public void initUploadsCleanerExecutor() {
+    executor = Executors.newSingleThreadScheduledExecutor();
+    Runnable cleanTask = () -> {
       logger.info("Checking if there are any old imports that can be removed (map size: " + importStatus.size() + ")");
+      List<String> uploadIdsToBeRemoved = new ArrayList<>();
       for (CadsrImportStatus importStatus : importStatus.values()) {
-        boolean removeFromMap = true;
+        int countMeetsConditions = 0;
         for (CadsrFileImportStatus fileStatus : importStatus.getFilesImportStatus().values()) {
           // Checks if all the files that belong to the particular upload are older than the given threshold. If any
           // of them is more recent than the threshold, we don't remove the uploadId from the map
-          if (fileStatus.getImportStatus() != ImportStatus.COMPLETE ||
-              fileStatus.getStatusTime().plusMinutes(REMOVE_OLD_UPLOADS_THRESHOLD_MINUTES).isAfter(LocalTime.now())) {
-            removeFromMap = false;
+          if ((fileStatus.getImportStatus() == ImportStatus.COMPLETE &&
+              fileStatus.getStatusTime().plusMinutes(CLEAN_THRESHOLD_1_MINUTES).isBefore(LocalTime.now())) ||
+              (fileStatus.getImportStatus() != ImportStatus.COMPLETE &&
+              fileStatus.getStatusTime().plusMinutes(CLEAN_THRESHOLD_2_MINUTES).isBefore(LocalTime.now()))){
+            countMeetsConditions++;
+          }
+          else {
             break;
           }
         }
-        if (removeFromMap) {
-          logger.info("Removing old upload task from map:  " + importStatus.getUploadId());
-          removeImportStatus(importStatus.getUploadId());
+        // Remove from map if all the files are older than one of the thresholds
+        if (countMeetsConditions == importStatus.getFilesImportStatus().size()) {
+          uploadIdsToBeRemoved.add(importStatus.getUploadId());
+        }
+      }
+      for (String uploadId : uploadIdsToBeRemoved) {
+        if (importStatus.containsKey(uploadId)) {
+          importStatus.remove(uploadId);
+          logger.info("UploadId removed: " + uploadId + ". Updated map size: " + importStatus.size());
         }
       }
     };
-    executor.scheduleAtFixedRate(clearTask, REMOVE_OLD_UPLOADS_PERIOD_MINUTES, REMOVE_OLD_UPLOADS_PERIOD_MINUTES, TimeUnit.MINUTES);
+    executor.scheduleWithFixedDelay(cleanTask, 0, CLEAN_DELAY_MINUTES, TimeUnit.MINUTES);
   }
 
   public CadsrImportStatus getStatus(String uploadId) {
