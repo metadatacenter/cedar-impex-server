@@ -128,20 +128,48 @@ public class ImpexServerResource extends CedarMicroserviceResource {
     }
   }
 
+  /* In production I may want to this method instead of the method below (it doesn't expose all uploads) */
+//  @GET
+//  @Timed
+//  @Path("/import-cadsr-forms-status")
+//  public Response importStatus(@QueryParam("uploadId") @NotEmpty String uploadId) throws CedarException {
+//
+//    CedarRequestContext c = buildRequestContext();
+//    c.must(c.user()).be(LoggedIn);
+//
+//    try {
+//      if (!CadsrImportStatusManager.getInstance().exists(uploadId)) {
+//        return CedarResponse.notFound().errorMessage("The specified uploadId cannot be found").id(uploadId).build();
+//      } else {
+//        CadsrImportStatus status = CadsrImportStatusManager.getInstance().getStatus(uploadId);
+//        JsonNode output = JsonMapper.MAPPER.valueToTree(status);
+//        return Response.ok().entity(output).build();
+//      }
+//    } catch (Exception e) {
+//      return CedarResponse.internalServerError().exception(e).build();
+//    }
+//  }
+
   @GET
   @Timed
   @Path("/import-cadsr-forms-status")
-  public Response importStatus(@QueryParam("uploadId") @NotEmpty String uploadId) throws CedarException {
+  public Response importStatus(@QueryParam("uploadId") String uploadId) throws CedarException {
 
     CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
 
     try {
-      if (!CadsrImportStatusManager.getInstance().exists(uploadId)) {
-        return CedarResponse.notFound().errorMessage("The specified uploadId cannot be found").id(uploadId).build();
-      } else {
-        CadsrImportStatus status = CadsrImportStatusManager.getInstance().getStatus(uploadId);
-        JsonNode output = JsonMapper.MAPPER.valueToTree(status);
+      if (uploadId != null) {
+        if (!CadsrImportStatusManager.getInstance().exists(uploadId)) {
+          return CedarResponse.notFound().errorMessage("The specified uploadId cannot be found").id(uploadId).build();
+        } else {
+          CadsrImportStatus status = CadsrImportStatusManager.getInstance().getStatus(uploadId);
+          JsonNode output = JsonMapper.MAPPER.valueToTree(status);
+          return Response.ok().entity(output).build();
+        }
+      }
+      else {
+        JsonNode output = JsonMapper.MAPPER.valueToTree(CadsrImportStatusManager.getInstance().getAllStatuses());
         return Response.ok().entity(output).build();
       }
     } catch (Exception e) {

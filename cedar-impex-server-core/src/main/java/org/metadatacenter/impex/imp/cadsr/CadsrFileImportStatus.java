@@ -8,11 +8,13 @@ public class CadsrFileImportStatus {
   private String fileName;
   private CadsrImportStatusManager.ImportStatus importStatus;
   private LocalTime statusTime;
+  private String report;
 
-  public CadsrFileImportStatus(String fileName, CadsrImportStatusManager.ImportStatus importStatus, LocalTime statusTime) {
+  public CadsrFileImportStatus(String fileName, CadsrImportStatusManager.ImportStatus importStatus, LocalTime statusTime, String report) {
     this.fileName = fileName;
     this.importStatus = importStatus;
     this.statusTime = statusTime;
+    this.report = report;
   }
 
   public String getFileName() {
@@ -37,5 +39,13 @@ public class CadsrFileImportStatus {
 
   public void setStatusTime(LocalTime statusTime) {
     this.statusTime = statusTime;
+  }
+
+  public String getReport() {
+    return report;
+  }
+
+  public void setReport(String report) {
+    this.report = report;
   }
 }

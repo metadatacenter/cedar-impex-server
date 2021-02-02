@@ -91,6 +91,10 @@ public class CadsrImportStatusManager {
     return importStatus.get(uploadId);
   }
 
+  public Map<String, CadsrImportStatus> getAllStatuses() {
+    return importStatus;
+  }
+
   /**
    * Adds the upload information to the map and sets the import status to PENDING for all the forms
    * @param uploadId
@@ -101,7 +105,7 @@ public class CadsrImportStatusManager {
     Map<String, CadsrFileImportStatus> filesImportStatus = new HashMap<>();
     for (FileUploadStatus fileUploadStatus : uploadStatus.getFilesUploadStatus().values()) {
       String fileName = ImpexUtil.getFileNameFromFilePath(fileUploadStatus.getFileLocalPath());
-      filesImportStatus.put(fileName, new CadsrFileImportStatus(fileName, ImportStatus.PENDING, LocalTime.now()));
+      filesImportStatus.put(fileName, new CadsrFileImportStatus(fileName, ImportStatus.PENDING, LocalTime.now(), ""));
     }
     importStatus.put(uploadId, new CadsrImportStatus(uploadId, filesImportStatus, destinationCedarFolderId));
   }
@@ -120,7 +124,23 @@ public class CadsrImportStatusManager {
     if (status != ImportStatus.IN_PROGRESS && status != ImportStatus.COMPLETE) {
       throw new IllegalArgumentException("Invalid import status: " + status);
     }
-    importStatus.get(uploadId).getFilesImportStatus().put(fileName, new CadsrFileImportStatus(fileName, status, LocalTime.now()));
+    if (!importStatus.get(uploadId).getFilesImportStatus().containsKey(fileName)) {
+      throw new IllegalArgumentException("fileName not found: " + fileName);
+    }
+
+    CadsrFileImportStatus fis = importStatus.get(uploadId).getFilesImportStatus().get(fileName);
+    fis.setImportStatus(status);
+
+    Map<String, CadsrFileImportStatus> fisMap = importStatus.get(uploadId).getFilesImportStatus();
+    fisMap.put(fileName, fis);
+
+    CadsrImportStatus is = importStatus.get(uploadId);
+    is.setFilesImportStatus(fisMap);
+
+    importStatus.replace(uploadId, is);
+
+    writeReportMessage(uploadId, fileName, "I have set the status to " + status);
+    writeReportMessage(uploadId, fileName, "and I'm writing an additional line just for fun");
   }
 
   private synchronized void removeImportStatus(String uploadId) {
@@ -129,6 +149,38 @@ public class CadsrImportStatusManager {
 
   public boolean exists(String uploadId) {
     return importStatus.containsKey(uploadId);
+  }
+
+  /**
+   * Writes a new line to the report
+   */
+  public void writeReportMessage(String uploadId, String fileName, String message) {
+
+    if (importStatus.containsKey(uploadId)) {
+
+      if (importStatus.get(uploadId).getFilesImportStatus().containsKey(fileName)) {
+        String currentReport = importStatus.get(uploadId).getFilesImportStatus().get(fileName).getReport();
+        String lineSeparator = currentReport.length() > 0 ? System.getProperty("line.separator") : "";
+        String newReport = currentReport + lineSeparator + message;
+        
+        CadsrFileImportStatus fis = importStatus.get(uploadId).getFilesImportStatus().get(fileName);
+        fis.setReport(newReport);
+
+        Map<String, CadsrFileImportStatus> fisMap = importStatus.get(uploadId).getFilesImportStatus();
+        fisMap.replace(fileName, fis);
+
+        CadsrImportStatus is = importStatus.get(uploadId);
+        is.setFilesImportStatus(fisMap);
+
+        importStatus.replace(uploadId, is);
+      }
+      else {
+        throw new IllegalArgumentException("FileName not found: " + fileName);
+      }
+    }
+    else {
+      throw new IllegalArgumentException("UploadId not found: " + uploadId);
+    }
   }
 
 }
