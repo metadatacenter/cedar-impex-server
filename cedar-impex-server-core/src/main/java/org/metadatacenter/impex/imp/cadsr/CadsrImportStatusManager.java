@@ -7,7 +7,9 @@ import org.metadatacenter.impex.util.ImpexUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -139,8 +141,6 @@ public class CadsrImportStatusManager {
 
     importStatus.replace(uploadId, is);
 
-    writeReportMessage(uploadId, fileName, "I have set the status to " + status);
-    writeReportMessage(uploadId, fileName, "and I'm writing an additional line just for fun");
   }
 
   private synchronized void removeImportStatus(String uploadId) {
@@ -155,14 +155,23 @@ public class CadsrImportStatusManager {
    * Writes a new line to the report
    */
   public void writeReportMessage(String uploadId, String fileName, String message) {
+    writeReportMessage(uploadId, fileName, message, true);
+  }
+
+  public void writeReportMessage(String uploadId, String fileName, String message, boolean includeDateTime) {
 
     if (importStatus.containsKey(uploadId)) {
 
       if (importStatus.get(uploadId).getFilesImportStatus().containsKey(fileName)) {
+        String dateTime = "";
+        if (includeDateTime) {
+          DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
+          dateTime = "[" + dtf.format(LocalDateTime.now()) + "] ";
+        }
         String currentReport = importStatus.get(uploadId).getFilesImportStatus().get(fileName).getReport();
         String lineSeparator = currentReport.length() > 0 ? System.getProperty("line.separator") : "";
-        String newReport = currentReport + lineSeparator + message;
-        
+        String newReport = currentReport + lineSeparator + dateTime + message;
+
         CadsrFileImportStatus fis = importStatus.get(uploadId).getFilesImportStatus().get(fileName);
         fis.setReport(newReport);
 
