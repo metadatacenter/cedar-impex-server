@@ -4,13 +4,11 @@ import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
-import org.hibernate.validator.constraints.NotEmpty;
 import org.metadatacenter.cadsr.form.schema.Form;
 import org.metadatacenter.cadsr.ingestor.form.FormUtil;
 import org.metadatacenter.cadsr.ingestor.util.CedarServerUtil;
 import org.metadatacenter.cadsr.ingestor.util.CedarServices;
 import org.metadatacenter.cadsr.ingestor.util.Constants;
-import org.metadatacenter.cadsr.ingestor.util.GeneralUtil;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceResource;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.exception.CedarException;
@@ -53,6 +51,8 @@ public class ImpexServerResource extends CedarMicroserviceResource {
    * The client doesn't need to wait for the import task to be completed but it's responsible for using the
    * import-cadsr-forms-status endpoint to check the import status.
    *
+   * If folder Id is not provided, the imported forms will be saved into the user's home folder
+   *
    * @return
    * @throws CedarException
    */
@@ -60,7 +60,7 @@ public class ImpexServerResource extends CedarMicroserviceResource {
   @Timed
   @Path("/import-cadsr-forms")
   @Consumes(MediaType.MULTIPART_FORM_DATA)
-  public Response importCadsrForm() throws CedarException {
+  public Response importCadsrForm(@QueryParam("folderId") String folderId) throws CedarException {
 
     CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
@@ -96,7 +96,7 @@ public class ImpexServerResource extends CedarMicroserviceResource {
           // Import files into CEDAR asynchronously
           new Thread(() -> {
             try {
-              String cedarFolderId = c.getCedarUser().getHomeFolderId();
+              String cedarFolderId = folderId != null ? folderId : c.getCedarUser().getHomeFolderId();
               // Set import status to 'PENDING' for all the files that are part of the upload
               CadsrImportStatusManager.getInstance().initImportStatus(data.getUploadId(), cedarFolderId);
 
@@ -106,6 +106,7 @@ public class ImpexServerResource extends CedarMicroserviceResource {
                 CadsrImportStatusManager.getInstance().setStatus(data.getUploadId(), fileName,
                     ImportStatus.IN_PROGRESS);
                 logger.info("Importing file: " + formFilePath);
+                CadsrImportStatusManager.getInstance().writeReportMessage(data.uploadId, fileName, "*** Importing " + fileName + " ***");
                 // Translate form to CEDAR template
                 Form form = FormUtil.getForm(new FileInputStream(formFilePath));
                 Map templateMap = FormUtil.getTemplateMapFromForm(form);
