@@ -25,7 +25,8 @@ public class CadsrImportStatusManager {
   public enum ImportStatus {
     PENDING,
     IN_PROGRESS,
-    COMPLETE
+    COMPLETE,
+    ERROR
   }
 
   // Imports older than this threshold will be removed from the map
@@ -64,9 +65,9 @@ public class CadsrImportStatusManager {
         for (CadsrFileImportStatus fileStatus : importStatus.getFilesImportStatus().values()) {
           // Checks if all the files that belong to the particular upload are older than the given threshold. If any
           // of them is more recent than the threshold, we don't remove the uploadId from the map
-          if ((fileStatus.getImportStatus() == ImportStatus.COMPLETE &&
+          if (((fileStatus.getImportStatus() == ImportStatus.COMPLETE || fileStatus.getImportStatus() == ImportStatus.ERROR) &&
               fileStatus.getStatusTime().plusMinutes(CLEAN_THRESHOLD_1_MINUTES).isBefore(LocalTime.now())) ||
-              (fileStatus.getImportStatus() != ImportStatus.COMPLETE &&
+              ((fileStatus.getImportStatus() == ImportStatus.COMPLETE || fileStatus.getImportStatus() == ImportStatus.ERROR) &&
               fileStatus.getStatusTime().plusMinutes(CLEAN_THRESHOLD_2_MINUTES).isBefore(LocalTime.now()))){
             countMeetsConditions++;
           }
@@ -122,9 +123,6 @@ public class CadsrImportStatusManager {
   public synchronized void setStatus(String uploadId, String fileName, ImportStatus status) {
     if (!importStatus.containsKey(uploadId)) {
       throw new IllegalArgumentException("uploadId not found: " + uploadId);
-    }
-    if (status != ImportStatus.IN_PROGRESS && status != ImportStatus.COMPLETE) {
-      throw new IllegalArgumentException("Invalid import status: " + status);
     }
     if (!importStatus.get(uploadId).getFilesImportStatus().containsKey(fileName)) {
       throw new IllegalArgumentException("fileName not found: " + fileName);

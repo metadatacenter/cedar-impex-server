@@ -32,7 +32,9 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.xml.bind.JAXBException;
+import javax.xml.bind.UnmarshalException;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Map;
 
@@ -52,7 +54,7 @@ public class ImpexServerResource extends CedarMicroserviceResource {
    * Used to upload and import caDSR forms into CEDAR. The import is executed asynchronously in an independent thread.
    * The client doesn't need to wait for the import task to be completed but it's responsible for using the
    * import-cadsr-forms-status endpoint to check the import status.
-   *
+   * <p>
    * If folder Id is not provided, the imported forms will be saved into the user's home folder
    *
    * @return
@@ -97,52 +99,59 @@ public class ImpexServerResource extends CedarMicroserviceResource {
 
           // Import files into CEDAR asynchronously
           new Thread(() -> {
+            String fileName = null;
             try {
               String cedarFolderId = folderId != null ? folderId : c.getCedarUser().getHomeFolderId();
               // Set import status to 'PENDING' for all the files that are part of the upload
               CadsrImportStatusManager.getInstance().initImportStatus(data.getUploadId(), cedarFolderId);
 
               for (String formFilePath : UploadManager.getInstance().getUploadFilePaths(data.getUploadId())) {
-                // Set status to IN_PROGRESS
-                String fileName = ImpexUtil.getFileNameFromFilePath(formFilePath);
-                CadsrImportStatusManager.getInstance().setStatus(data.getUploadId(), fileName,
-                    ImportStatus.IN_PROGRESS);
-                logger.info("Importing file: " + formFilePath);
-                // Translate form to CEDAR template
-                Form form = FormUtil.getForm(new FileInputStream(formFilePath));
-                FormParseResult parseResult = FormUtil.getTemplateMapFromForm(form);
-                CadsrImportStatusManager.getInstance().writeReportMessages(data.uploadId, fileName,parseResult.getReportMessages());
-                // Upload template to CEDAR
-                Constants.CedarServer cedarServer = CedarServerUtil.toCedarServerFromHostName(cedarConfig.getHost());
-                String apiKey = c.getCedarUser().getFirstActiveApiKey();
-                CedarServices.createTemplate(parseResult.getTemplateMap(), cedarFolderId, cedarServer, apiKey);
-                // Set status to COMPLETE
-                CadsrImportStatusManager.getInstance().setStatus(data.getUploadId(), fileName, ImportStatus.COMPLETE);
-              }
 
+                try {
+                  // Set status to IN_PROGRESS
+                  fileName = ImpexUtil.getFileNameFromFilePath(formFilePath);
+                  CadsrImportStatusManager.getInstance().setStatus(data.getUploadId(), fileName,
+                      ImportStatus.IN_PROGRESS);
+                  logger.info("Importing file: " + formFilePath);
+                  // Translate form to CEDAR template
+                  Form form = FormUtil.getForm(new FileInputStream(formFilePath));
+                  FormParseResult parseResult = FormUtil.getTemplateMapFromForm(form);
+                  CadsrImportStatusManager.getInstance().writeReportMessages(data.uploadId, fileName,
+                      parseResult.getReportMessages());
+                  // Upload template to CEDAR
+                  Constants.CedarServer cedarServer = CedarServerUtil.toCedarServerFromHostName(cedarConfig.getHost());
+                  String apiKey = c.getCedarUser().getFirstActiveApiKey();
+                  CedarServices.createTemplate(parseResult.getTemplateMap(), cedarFolderId, cedarServer, apiKey);
+                  // Set status to COMPLETE
+                  CadsrImportStatusManager.getInstance().setStatus(data.getUploadId(), fileName, ImportStatus.COMPLETE);
+                } catch (JAXBException | IOException e) {
+                  logger.error(e.getMessage());
+                  CadsrImportStatusManager.getInstance().setStatus(data.getUploadId(), fileName, ImportStatus.ERROR);
+                }
+              }
               // Remove the upload from the status map
               UploadManager.getInstance().removeUploadStatus(data.getUploadId());
 
-              // TODO: manage exceptions
             } catch (UploadInstanceNotFoundException e) {
-              e.printStackTrace();
-            } catch (JAXBException e) {
-              e.printStackTrace();
-            } catch (IOException e) {
-              e.printStackTrace();
+              logger.error(e.getMessage());
+              CadsrImportStatusManager.getInstance().setStatus(data.getUploadId(), fileName, ImportStatus.ERROR);
             }
           }).start();
         }
-
       } catch (FileUploadException e) {
-        logger.error(e.getMessage(), e);
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+        return CedarResponse.internalServerError()
+            .errorMessage("Error uploading file")
+            .exception(e).build();
       } catch (IllegalAccessException e) {
-        e.printStackTrace();
+        return CedarResponse.internalServerError()
+            .exception(e).build();
       } catch (UploadInstanceNotFoundException e) {
-        e.printStackTrace();
+        return CedarResponse.internalServerError()
+            .errorMessage("Upload Id not found")
+            .exception(e).build();
       } catch (IOException e) {
-        e.printStackTrace();
+        return CedarResponse.internalServerError()
+            .exception(e).build();
       }
       return Response.ok().build();
     } else {
