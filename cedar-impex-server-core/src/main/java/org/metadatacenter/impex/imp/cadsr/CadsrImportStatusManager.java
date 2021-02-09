@@ -152,10 +152,25 @@ public class CadsrImportStatusManager {
   }
 
   /**
+   * Writes multiple lines to the report
+   * @param uploadId
+   * @param fileName
+   * @param messages
+   */
+  public void writeReportMessages(String uploadId, String fileName, List<String> messages) {
+    for (String message : messages) {
+      writeReportMessage(uploadId, fileName, message);
+    }
+  }
+
+  /**
    * Writes a new line to the report
+   * @param uploadId
+   * @param fileName
+   * @param message
    */
   public void writeReportMessage(String uploadId, String fileName, String message) {
-    writeReportMessage(uploadId, fileName, message, true);
+    writeReportMessage(uploadId, fileName, message, false);
   }
 
   public void writeReportMessage(String uploadId, String fileName, String message, boolean includeDateTime) {

@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.metadatacenter.cadsr.form.schema.Form;
+import org.metadatacenter.cadsr.ingestor.form.FormParseResult;
+import org.metadatacenter.cadsr.ingestor.form.FormParser;
 import org.metadatacenter.cadsr.ingestor.form.FormUtil;
 import org.metadatacenter.cadsr.ingestor.util.CedarServerUtil;
 import org.metadatacenter.cadsr.ingestor.util.CedarServices;
@@ -106,14 +108,14 @@ public class ImpexServerResource extends CedarMicroserviceResource {
                 CadsrImportStatusManager.getInstance().setStatus(data.getUploadId(), fileName,
                     ImportStatus.IN_PROGRESS);
                 logger.info("Importing file: " + formFilePath);
-                CadsrImportStatusManager.getInstance().writeReportMessage(data.uploadId, fileName, "*** Importing " + fileName + " ***");
                 // Translate form to CEDAR template
                 Form form = FormUtil.getForm(new FileInputStream(formFilePath));
-                Map templateMap = FormUtil.getTemplateMapFromForm(form);
+                FormParseResult parseResult = FormUtil.getTemplateMapFromForm(form);
+                CadsrImportStatusManager.getInstance().writeReportMessages(data.uploadId, fileName,parseResult.getReportMessages());
                 // Upload template to CEDAR
                 Constants.CedarServer cedarServer = CedarServerUtil.toCedarServerFromHostName(cedarConfig.getHost());
                 String apiKey = c.getCedarUser().getFirstActiveApiKey();
-                CedarServices.createTemplate(templateMap, cedarFolderId, cedarServer, apiKey);
+                CedarServices.createTemplate(parseResult.getTemplateMap(), cedarFolderId, cedarServer, apiKey);
                 // Set status to COMPLETE
                 CadsrImportStatusManager.getInstance().setStatus(data.getUploadId(), fileName, ImportStatus.COMPLETE);
               }
