@@ -115,7 +115,8 @@ public class ImpexServerResource extends CedarMicroserviceResource {
                   logger.info("Importing file: " + formFilePath);
                   // Translate form to CEDAR template
                   Form form = FormUtil.getForm(new FileInputStream(formFilePath));
-                  FormParseResult parseResult = FormUtil.getTemplateMapFromForm(form);
+                  FormParseResult parseResult = FormUtil.getTemplateMapFromForm(form, data.getUploadId() + "_" + fileName);
+                  logger.info(parseResult.getTemplateMap().toString());
                   CadsrImportStatusManager.getInstance().writeReportMessages(data.uploadId, fileName,
                       parseResult.getReportMessages());
                   // Upload template to CEDAR
@@ -124,7 +125,7 @@ public class ImpexServerResource extends CedarMicroserviceResource {
                   CedarServices.createTemplate(parseResult.getTemplateMap(), cedarFolderId, cedarServer, apiKey);
                   // Set status to COMPLETE
                   CadsrImportStatusManager.getInstance().setStatus(data.getUploadId(), fileName, ImportStatus.COMPLETE);
-                } catch (JAXBException | IOException e) {
+                } catch (JAXBException | IOException | RuntimeException e) {
                   logger.error(e.getMessage());
                   CadsrImportStatusManager.getInstance().setStatus(data.getUploadId(), fileName, ImportStatus.ERROR);
                 }
@@ -149,7 +150,8 @@ public class ImpexServerResource extends CedarMicroserviceResource {
         return CedarResponse.internalServerError()
             .errorMessage("Upload Id not found")
             .exception(e).build();
-      } catch (IOException e) {
+      }
+      catch (IOException e) {
         return CedarResponse.internalServerError()
             .exception(e).build();
       }
