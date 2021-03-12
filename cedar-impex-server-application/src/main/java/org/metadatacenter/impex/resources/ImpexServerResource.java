@@ -129,16 +129,15 @@ public class ImpexServerResource extends CedarMicroserviceResource {
                   logger.error("Error parsing input file");
                   CadsrImportStatusManager.getInstance().setStatus(data.getUploadId(), fileName, ImportStatus.ERROR);
                 } catch (IOException | RuntimeException e) {
-                  CadsrImportStatusManager.getInstance().writeReportMessage(data.uploadId, fileName, e.getMessage());
-                  logger.error(e.getMessage());
+                  CadsrImportStatusManager.getInstance().writeReportMessage(data.uploadId, fileName, "Error importing form");
+                  logger.error("Error importing form: " + e.getMessage());
                   CadsrImportStatusManager.getInstance().setStatus(data.getUploadId(), fileName, ImportStatus.ERROR);
                 }
               }
               // Remove the upload from the status map
               UploadManager.getInstance().removeUploadStatus(data.getUploadId());
-
             } catch (UploadInstanceNotFoundException e) {
-              logger.error(e.getMessage());
+              logger.error("Upload instance not found: " + e.getMessage());
             }
           }).start();
         }
