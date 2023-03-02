@@ -26,12 +26,16 @@ import org.metadatacenter.util.http.CedarResponse;
 import org.metadatacenter.util.json.JsonMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xml.sax.SAXParseException;
 
-import javax.ws.rs.*;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.xml.bind.JAXBException;
+import jakarta.xml.bind.JAXBException;
 import java.io.FileInputStream;
 import java.io.IOException;
 
@@ -124,13 +128,13 @@ public class ImpexServerResource extends CedarMicroserviceResource {
                   // Set status to COMPLETE
                   CadsrImportStatusManager.getInstance().setStatus(data.getUploadId(), fileName, ImportStatus.COMPLETE);
                 } catch (JAXBException e) {
-                  CadsrImportStatusManager.getInstance().writeReportMessage(data.uploadId, fileName, "Parsing error. " +
-                      "Please check that the input file contains a valid XML caDSR form");
-                  logger.error("Error parsing input file");
+                  CadsrImportStatusManager.getInstance().writeReportMessage(data.uploadId, fileName, "Parsing error: "
+                    + e + "\nPlease check that the input file contains a valid XML caDSR form");
+                  logger.error("Error parsing input file: " + e);
                   CadsrImportStatusManager.getInstance().setStatus(data.getUploadId(), fileName, ImportStatus.ERROR);
                 } catch (IOException | RuntimeException e) {
-                  CadsrImportStatusManager.getInstance().writeReportMessage(data.uploadId, fileName, "Error importing form");
-                  logger.error("Error importing form: " + e.getMessage());
+                  CadsrImportStatusManager.getInstance().writeReportMessage(data.uploadId, fileName, "Error importing form: " + e);
+                  logger.error("Error importing form: " + e);
                   CadsrImportStatusManager.getInstance().setStatus(data.getUploadId(), fileName, ImportStatus.ERROR);
                 }
               }
@@ -143,7 +147,7 @@ public class ImpexServerResource extends CedarMicroserviceResource {
         }
       } catch (FileUploadException e) {
         return CedarResponse.internalServerError()
-            .errorMessage("Error uploading file")
+            .errorMessage("Error uploading file: " + e)
             .exception(e).build();
       } catch (IllegalAccessException e) {
         return CedarResponse.internalServerError()
