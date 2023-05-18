@@ -13,6 +13,7 @@ import org.metadatacenter.cadsr.ingestor.util.Constants;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceResource;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.exception.CedarException;
+import org.metadatacenter.http.CedarResponseStatus;
 import org.metadatacenter.impex.exception.UploadInstanceNotFoundException;
 import org.metadatacenter.impex.imp.cadsr.CadsrImportStatus;
 import org.metadatacenter.impex.imp.cadsr.CadsrImportStatusManager;
@@ -162,7 +163,7 @@ public class ImpexServerResource extends CedarMicroserviceResource {
       }
       return Response.ok().build();
     } else {
-      return Response.status(Response.Status.BAD_REQUEST).build();
+      return CedarResponse.status(CedarResponseStatus.BAD_REQUEST).build();
     }
   }
 
