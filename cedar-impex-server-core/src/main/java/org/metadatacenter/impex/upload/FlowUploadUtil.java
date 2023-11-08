@@ -4,8 +4,6 @@ import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -151,6 +149,6 @@ public class FlowUploadUtil {
   }
 
   public static String getLastFragmentOfUrl(String url) {
-    return url.substring(url.lastIndexOf("/") + 1, url.length());
+    return url.substring(url.lastIndexOf("/") + 1);
   }
 }

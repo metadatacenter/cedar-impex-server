@@ -1,7 +1,6 @@
 package org.metadatacenter.impex.upload;
 
 import java.io.InputStream;
-import java.util.List;
 import java.util.Map;
 
 /**

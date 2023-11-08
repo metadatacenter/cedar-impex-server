@@ -1,7 +1,6 @@
 package org.metadatacenter.impex.imp.cadsr;
 
 import java.time.LocalTime;
-import java.util.Date;
 
 public class CadsrFileImportStatus {
 
