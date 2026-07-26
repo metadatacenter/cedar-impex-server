@@ -2,8 +2,8 @@ package org.metadatacenter.impex.resources;
 
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.databind.JsonNode;
-import org.apache.commons.fileupload.FileUploadException;
-import org.apache.commons.fileupload.servlet.ServletFileUpload;
+import org.apache.commons.fileupload2.core.FileUploadException;
+import org.apache.commons.fileupload2.jakarta.servlet5.JakartaServletFileUpload;
 import org.metadatacenter.cadsr.form.schema.Form;
 import org.metadatacenter.cadsr.ingestor.form.FormParseResult;
 import org.metadatacenter.cadsr.ingestor.form.FormUtil;
@@ -28,14 +28,14 @@ import org.metadatacenter.util.json.JsonMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import jakarta.xml.bind.JAXBException;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -72,7 +72,7 @@ public class ImpexServerResource extends CedarMicroserviceResource {
     c.must(c.user()).be(LoggedIn);
 
     // Check that it's a file upload request
-    if (ServletFileUpload.isMultipartContent(request)) {
+    if (JakartaServletFileUpload.isMultipartContent(request)) {
 
       try {
         String userId = c.getCedarUser().getId();
