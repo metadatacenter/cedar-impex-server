@@ -68,7 +68,7 @@ public class FlowUploadUtil {
         try {
           flowFileInputStream = item.getInputStream();
         } catch (IOException e) {
-          e.printStackTrace();
+          logger.error("Error opening the input stream of uploaded file chunk: " + item.getName(), e);
         }
       }
     }
