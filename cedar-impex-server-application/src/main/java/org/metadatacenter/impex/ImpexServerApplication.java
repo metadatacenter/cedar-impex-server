@@ -1,10 +1,10 @@
 package org.metadatacenter.impex;
 
-import io.dropwizard.setup.Bootstrap;
-import io.dropwizard.setup.Environment;
+import io.dropwizard.core.setup.Bootstrap;
+import io.dropwizard.core.setup.Environment;
+import org.metadatacenter.cedar.util.dw.CedarDefaultHealthCheck;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceApplication;
 import org.metadatacenter.config.CedarConfig;
-import org.metadatacenter.impex.health.ImpexServerHealthCheck;
 import org.metadatacenter.impex.resources.IndexResource;
 import org.metadatacenter.impex.resources.ImpexServerResource;
 import org.metadatacenter.model.ServerName;
@@ -32,14 +32,14 @@ public class ImpexServerApplication extends CedarMicroserviceApplication<ImpexSe
   @Override
   public void runApp(ImpexServerConfiguration configuration, Environment environment) {
 
-    final IndexResource index = new IndexResource();
+    final IndexResource index = new IndexResource(cedarConfig);
     environment.jersey().register(index);
 
     // Register resources
     final ImpexServerResource ncbiSubmissionServerResource = new ImpexServerResource(cedarConfig);
     environment.jersey().register(ncbiSubmissionServerResource);
 
-    final ImpexServerHealthCheck healthCheck = new ImpexServerHealthCheck();
+    final CedarDefaultHealthCheck healthCheck = new CedarDefaultHealthCheck();
     environment.healthChecks().register("message", healthCheck);
 
   }

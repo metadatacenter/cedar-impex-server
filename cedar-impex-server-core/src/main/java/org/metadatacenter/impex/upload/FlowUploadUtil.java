@@ -1,13 +1,13 @@
 package org.metadatacenter.impex.upload;
 
-import org.apache.commons.fileupload.FileItem;
-import org.apache.commons.fileupload.FileUploadException;
-import org.apache.commons.fileupload.disk.DiskFileItemFactory;
-import org.apache.commons.fileupload.servlet.ServletFileUpload;
+import org.apache.commons.fileupload2.core.DiskFileItem;
+import org.apache.commons.fileupload2.core.DiskFileItemFactory;
+import org.apache.commons.fileupload2.core.FileUploadException;
+import org.apache.commons.fileupload2.jakarta.servlet5.JakartaServletFileUpload;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,10 +18,12 @@ public class FlowUploadUtil {
 
   final static Logger logger = LoggerFactory.getLogger(FlowUploadUtil.class);
 
-  public static FlowData getFlowData(HttpServletRequest request) throws IllegalAccessException, FileUploadException {
+  public static FlowData getFlowData(HttpServletRequest request)
+      throws IllegalAccessException, FileUploadException, IOException {
 
     // Extract all the files or form items that were received within the multipart/form-data POST request
-    List<FileItem> fileItems = new ServletFileUpload(new DiskFileItemFactory()).parseRequest(request);
+    List<DiskFileItem> fileItems =
+        new JakartaServletFileUpload<>(DiskFileItemFactory.builder().get()).parseRequest(request);
 
     String uploadId = null;
     long numberOfFiles = -1;
@@ -36,7 +38,7 @@ public class FlowUploadUtil {
     InputStream flowFileInputStream = null;
     Map<String, String> additionalParameters = new HashMap<>();
 
-    for (FileItem item : fileItems) {
+    for (DiskFileItem item : fileItems) {
       if (item.isFormField()) {
         if (item.getFieldName().equals("uploadId")) {
           uploadId = item.getString();
@@ -66,7 +68,7 @@ public class FlowUploadUtil {
         try {
           flowFileInputStream = item.getInputStream();
         } catch (IOException e) {
-          e.printStackTrace();
+          logger.error("Error opening the input stream of uploaded file chunk: " + item.getName(), e);
         }
       }
     }
