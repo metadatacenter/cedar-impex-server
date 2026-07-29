@@ -1,5 +1,6 @@
 package org.metadatacenter.impex.upload;
 
+import jakarta.ws.rs.BadRequestException;
 import org.apache.commons.fileupload2.core.DiskFileItem;
 import org.apache.commons.fileupload2.core.DiskFileItemFactory;
 import org.apache.commons.fileupload2.core.FileUploadException;
@@ -80,25 +81,25 @@ public class FlowUploadUtil {
 
     // Throw an exception if any of the expected fields is missing
     if (uploadId == null) {
-      throw new InternalError("Missing field: uploadId");
+      throw new BadRequestException("Missing field: uploadId");
     } else if (numberOfFiles == -1) {
-      throw new InternalError("Missing field: numberOfFiles");
+      throw new BadRequestException("Missing field: numberOfFiles");
     } else if (flowChunkNumber == -1) {
-      throw new InternalError("Missing field: flowChunkNumber");
+      throw new BadRequestException("Missing field: flowChunkNumber");
     } else if (flowChunkSize == -1) {
-      throw new InternalError("Missing field: flowChunkSize");
+      throw new BadRequestException("Missing field: flowChunkSize");
     } else if (flowCurrentChunkSize == -1) {
-      throw new InternalError("Missing field: flowCurrentChunkSize");
+      throw new BadRequestException("Missing field: flowCurrentChunkSize");
     } else if (flowTotalSize == -1) {
-      throw new InternalError("Missing field: flowTotalSize");
+      throw new BadRequestException("Missing field: flowTotalSize");
     } else if (flowIdentifier == null) {
-      throw new InternalError("Missing field: flowIdentifier");
+      throw new BadRequestException("Missing field: flowIdentifier");
     } else if (flowFilename == null) {
-      throw new InternalError("Missing field: flowFilename");
+      throw new BadRequestException("Missing field: flowFilename");
     } else if (flowRelativePath == null) {
-      throw new InternalError("Missing field: flowRelativePath");
+      throw new BadRequestException("Missing field: flowRelativePath");
     } else if (flowTotalChunks == -1) {
-      throw new InternalError("Missing field: flowTotalChunks");
+      throw new BadRequestException("Missing field: flowTotalChunks");
     }
 
     return new FlowData(uploadId, numberOfFiles, flowChunkNumber, flowChunkSize,

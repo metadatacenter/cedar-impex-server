@@ -1,5 +1,6 @@
 package org.metadatacenter.impex.upload;
 
+import jakarta.ws.rs.BadRequestException;
 import org.metadatacenter.impex.exception.UploadInstanceNotFoundException;
 
 import java.util.ArrayList;
@@ -66,7 +67,7 @@ public class UploadManager {
     if (fileUploadStatus.getFileUploadedChunks() == fileUploadStatus.getFileTotalChunks()) {
       return true;
     } else if (fileUploadStatus.getFileUploadedChunks() > fileUploadStatus.getFileTotalChunks()) {
-      throw new InternalError("Uploaded file chunks is higher than total file chunks");
+      throw new BadRequestException("Uploaded file chunks is higher than total file chunks");
     } else {
       return false;
     }
@@ -81,7 +82,7 @@ public class UploadManager {
     if (status.getUploadedFilesCount() == status.getTotalFilesCount()) {
       return true;
     } else if (status.getUploadedFilesCount() > status.getTotalFilesCount()) {
-      throw new InternalError("Number of uploaded files is higher than the total number of files (uploadId = " +
+      throw new BadRequestException("Number of uploaded files is higher than the total number of files (uploadId = " +
           uploadId);
     } else {
       return false;
@@ -99,7 +100,7 @@ public class UploadManager {
       throw new UploadInstanceNotFoundException("Upload not found (uploadId = " + uploadId);
     }
     if (!isUploadComplete(uploadId)) {
-      throw new InternalError("The upload is not complete (uploadId = " + uploadId);
+      throw new BadRequestException("The upload is not complete (uploadId = " + uploadId);
     }
     UploadStatus status = uploadStatus.get(uploadId);
     for (Map.Entry<String, FileUploadStatus> entry : status.getFilesUploadStatus().entrySet()) {
