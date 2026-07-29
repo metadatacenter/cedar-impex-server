@@ -7,13 +7,15 @@ import org.metadatacenter.impex.util.ImpexUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -41,7 +43,7 @@ public class CadsrImportStatusManager {
 
   // Single instance
   private CadsrImportStatusManager() {
-    importStatus = new HashMap<>();
+    importStatus = new ConcurrentHashMap<>();
     initUploadsCleanerExecutor();
   }
 
@@ -65,10 +67,12 @@ public class CadsrImportStatusManager {
         for (CadsrFileImportStatus fileStatus : importStatus.getFilesImportStatus().values()) {
           // Checks if all the files that belong to the particular upload are older than the given threshold. If any
           // of them is more recent than the threshold, we don't remove the uploadId from the map
-          if (((fileStatus.getImportStatus() == ImportStatus.COMPLETE || fileStatus.getImportStatus() == ImportStatus.ERROR) &&
-              fileStatus.getStatusTime().plusMinutes(CLEAN_THRESHOLD_1_MINUTES).isBefore(LocalTime.now())) ||
-              ((fileStatus.getImportStatus() == ImportStatus.COMPLETE || fileStatus.getImportStatus() == ImportStatus.ERROR) &&
-              fileStatus.getStatusTime().plusMinutes(CLEAN_THRESHOLD_2_MINUTES).isBefore(LocalTime.now()))){
+          // Elapsed time from a fixed instant, not LocalTime: LocalTime wraps at midnight, so an
+          // import finished shortly before midnight would be misjudged as arbitrarily old or young.
+          boolean terminal = fileStatus.getImportStatus() == ImportStatus.COMPLETE
+              || fileStatus.getImportStatus() == ImportStatus.ERROR;
+          long ageMinutes = Duration.between(fileStatus.getStatusTime(), Instant.now()).toMinutes();
+          if (terminal && (ageMinutes >= CLEAN_THRESHOLD_1_MINUTES || ageMinutes >= CLEAN_THRESHOLD_2_MINUTES)) {
             countMeetsConditions++;
           }
           else {
@@ -95,7 +99,9 @@ public class CadsrImportStatusManager {
   }
 
   public Map<String, CadsrImportStatus> getAllStatuses() {
-    return importStatus;
+    // An immutable snapshot, not the live map: the only caller serializes it, and iterating the live
+    // map while request and cleaner threads mutate it risks a ConcurrentModificationException.
+    return Map.copyOf(importStatus);
   }
 
   /**
@@ -108,7 +114,7 @@ public class CadsrImportStatusManager {
     Map<String, CadsrFileImportStatus> filesImportStatus = new HashMap<>();
     for (FileUploadStatus fileUploadStatus : uploadStatus.getFilesUploadStatus().values()) {
       String fileName = ImpexUtil.getFileNameFromFilePath(fileUploadStatus.getFileLocalPath());
-      filesImportStatus.put(fileName, new CadsrFileImportStatus(fileName, ImportStatus.PENDING, LocalTime.now(), ""));
+      filesImportStatus.put(fileName, new CadsrFileImportStatus(fileName, ImportStatus.PENDING, Instant.now(), ""));
     }
     importStatus.put(uploadId, new CadsrImportStatus(uploadId, filesImportStatus, destinationCedarFolderId));
   }
@@ -171,7 +177,7 @@ public class CadsrImportStatusManager {
     writeReportMessage(uploadId, fileName, message, false);
   }
 
-  public void writeReportMessage(String uploadId, String fileName, String message, boolean includeDateTime) {
+  public synchronized void writeReportMessage(String uploadId, String fileName, String message, boolean includeDateTime) {
 
     if (importStatus.containsKey(uploadId)) {
 

@@ -1,15 +1,15 @@
 package org.metadatacenter.impex.imp.cadsr;
 
-import java.time.LocalTime;
+import java.time.Instant;
 
 public class CadsrFileImportStatus {
 
   private String fileName;
   private CadsrImportStatusManager.ImportStatus importStatus;
-  private LocalTime statusTime;
+  private Instant statusTime;
   private String report;
 
-  public CadsrFileImportStatus(String fileName, CadsrImportStatusManager.ImportStatus importStatus, LocalTime statusTime, String report) {
+  public CadsrFileImportStatus(String fileName, CadsrImportStatusManager.ImportStatus importStatus, Instant statusTime, String report) {
     this.fileName = fileName;
     this.importStatus = importStatus;
     this.statusTime = statusTime;
@@ -32,11 +32,11 @@ public class CadsrFileImportStatus {
     this.importStatus = importStatus;
   }
 
-  public LocalTime getStatusTime() {
+  public Instant getStatusTime() {
     return statusTime;
   }
 
-  public void setStatusTime(LocalTime statusTime) {
+  public void setStatusTime(Instant statusTime) {
     this.statusTime = statusTime;
   }
 

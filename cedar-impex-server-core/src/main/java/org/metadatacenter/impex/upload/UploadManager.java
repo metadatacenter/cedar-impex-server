@@ -72,7 +72,7 @@ public class UploadManager {
     }
   }
 
-  public boolean isUploadComplete(String uploadId) throws UploadInstanceNotFoundException {
+  public synchronized boolean isUploadComplete(String uploadId) throws UploadInstanceNotFoundException {
     if (!uploadStatus.containsKey(uploadId)) {
       throw new UploadInstanceNotFoundException("Upload not found (uploadId = " + uploadId);
     }
@@ -88,12 +88,12 @@ public class UploadManager {
     }
   }
 
-  public void removeUploadStatus(String uploadId) {
+  public synchronized void removeUploadStatus(String uploadId) {
     uploadStatus.remove(uploadId);
   }
 
   // Returns local file paths
-  public List<String> getUploadFilePaths(String uploadId) throws UploadInstanceNotFoundException {
+  public synchronized List<String> getUploadFilePaths(String uploadId) throws UploadInstanceNotFoundException {
     List<String> filePaths = new ArrayList<>();
     if (!uploadStatus.containsKey(uploadId)) {
       throw new UploadInstanceNotFoundException("Upload not found (uploadId = " + uploadId);
@@ -117,7 +117,7 @@ public class UploadManager {
     return uploadFileNames;
   }
 
-  public UploadStatus getUploadStatus(String uploadId) {
+  public synchronized UploadStatus getUploadStatus(String uploadId) {
     return uploadStatus.get(uploadId);
   }
 }

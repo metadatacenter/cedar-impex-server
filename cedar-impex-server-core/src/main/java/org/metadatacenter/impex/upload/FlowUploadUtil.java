@@ -12,11 +12,16 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
+import java.nio.file.Path;
 import java.util.*;
 
 public class FlowUploadUtil {
 
   final static Logger logger = LoggerFactory.getLogger(FlowUploadUtil.class);
+
+  // Ceiling on a single assembled upload. The chunk offset is derived from client-supplied values, so
+  // without a cap a client could seek far into a file and create a huge sparse file, exhausting the disk.
+  private static final long MAX_UPLOAD_BYTES = 5L * 1024 * 1024 * 1024; // 5 GiB
 
   public static FlowData getFlowData(HttpServletRequest request)
       throws IllegalAccessException, FileUploadException, IOException {
@@ -107,8 +112,14 @@ public class FlowUploadUtil {
       IOException {
 
     String fileLocalFolderPath = FlowUploadUtil.getFileLocalFolderPath(folderPath, data.flowFilename);
-    File file = new File(fileLocalFolderPath);
-    //logger.info("Local file path: " + fileLocalFolderPath);
+    // Containment check on top of the basename sanitization in getFileLocalFolderPath: the resolved
+    // target must stay under the upload root, so a crafted filename can never write outside it.
+    Path uploadRoot = new File(folderPath).toPath().toAbsolutePath().normalize();
+    Path target = new File(fileLocalFolderPath).toPath().toAbsolutePath().normalize();
+    if (!target.startsWith(uploadRoot)) {
+      throw new IOException("Resolved upload path escapes the upload root: " + target);
+    }
+    File file = target.toFile();
     if (!file.getParentFile().exists()) {
       file.getParentFile().mkdirs();
     }
@@ -116,38 +127,65 @@ public class FlowUploadUtil {
       file.createNewFile();
     }
     // Use a random access file to assemble all the file chunks
-    RandomAccessFile raf = new RandomAccessFile(file, "rw");
-    FlowUploadUtil.writeToRandomAccessFile(raf, data, contentLength);
+    try (RandomAccessFile raf = new RandomAccessFile(file, "rw")) {
+      FlowUploadUtil.writeToRandomAccessFile(raf, data, contentLength);
+    }
     return file.getAbsolutePath();
   }
 
   public static void writeToRandomAccessFile(RandomAccessFile raf, FlowData data, long contentLength) throws
       IOException {
-    // Seek to position
-    raf.seek((data.flowChunkNumber - 1) * data.flowChunkSize);
-    // Save to file
-    InputStream is = data.getFlowFileInputStream();
-    long read = 0;
-    byte[] bytes = new byte[1024 * 100];
-    while (read < contentLength) {
-      int r = is.read(bytes);
-      if (r < 0) {
-        break;
-      }
-      raf.write(bytes, 0, r);
-      read += r;
+    // The chunk offset comes from client-supplied values; validate before trusting it as a file
+    // offset, or a client could seek arbitrarily and create a huge sparse file.
+    if (data.flowChunkNumber < 1 || data.flowChunkSize < 0) {
+      throw new IOException("Invalid chunk coordinates");
     }
-    raf.close();
+    long offset = (data.flowChunkNumber - 1) * data.flowChunkSize;
+    if (offset < 0 || offset + contentLength > MAX_UPLOAD_BYTES) {
+      throw new IOException("Upload offset/size exceeds the allowed maximum");
+    }
+    raf.seek(offset);
+    // The caller owns raf (try-with-resources); here we only need to close the chunk input stream.
+    try (InputStream is = data.getFlowFileInputStream()) {
+      long read = 0;
+      byte[] bytes = new byte[1024 * 100];
+      while (read < contentLength) {
+        int r = is.read(bytes);
+        if (r < 0) {
+          break;
+        }
+        raf.write(bytes, 0, r);
+        read += r;
+      }
+    }
   }
 
   public static String getUploadLocalFolderPath(String baseFolderName, String userId, String uploadId) {
-    String userFolder = FlowUploadUtil.getLastFragmentOfUrl(userId);
+    // userId is server-derived and uploadId is client-supplied; sanitize both so neither can inject a
+    // path component (e.g. an uploadId of "../..") and redirect the upload folder outside the tmp root.
+    String userFolder = sanitizePathSegment(FlowUploadUtil.getLastFragmentOfUrl(userId));
     return System.getProperty("java.io.tmpdir") + "/" + baseFolderName + "/user_" + userFolder + "/upload_" +
-        uploadId;
+        sanitizePathSegment(uploadId);
   }
 
   public static String getFileLocalFolderPath(String uploadLocalFolderPath, String fileName) {
-    return uploadLocalFolderPath + "/" + fileName;
+    return uploadLocalFolderPath + "/" + sanitizePathSegment(fileName);
+  }
+
+  /**
+   * Reduce a client-supplied value to a single safe path segment: strip any directory components (both
+   * separators) and reject empty, "." and ".." so it cannot escape its parent directory.
+   */
+  public static String sanitizePathSegment(String raw) {
+    if (raw == null) {
+      throw new IllegalArgumentException("Missing path segment");
+    }
+    String name = raw.replace('\\', '/');
+    name = name.substring(name.lastIndexOf('/') + 1);
+    if (name.isEmpty() || name.equals(".") || name.equals("..")) {
+      throw new IllegalArgumentException("Illegal path segment: " + raw);
+    }
+    return name;
   }
 
   public static String getLastFragmentOfUrl(String url) {
