@@ -84,10 +84,10 @@ public class ImpexServerResource extends CedarMicroserviceResource {
         FlowUploadUtil.saveToLocalFile(data, userId, request.getContentLength(), submissionLocalFolderPath);
 
         // Update the submission upload status
-        UploadManager.getInstance().updateStatus(data, submissionLocalFolderPath);
+        UploadManager.getInstance().updateStatus(data, userId, submissionLocalFolderPath);
 
         // When the upload is complete, trigger the import process
-        if (UploadManager.getInstance().isUploadComplete(data.getUploadId())
+        if (UploadManager.getInstance().isUploadComplete(userId, data.getUploadId())
             && !CadsrImportStatusManager.getInstance().exists(data.getUploadId())) {
 
           logger.info("File(s) successfully uploaded to the Impex server: ");
@@ -95,7 +95,7 @@ public class ImpexServerResource extends CedarMicroserviceResource {
           logger.info("  - Local path: " + submissionLocalFolderPath);
           logger.info("  - No. files: " + data.getTotalFilesCount());
           logger.info("  - Uploaded file names: ");
-          for (String fileName : UploadManager.getInstance().getUploadFileNames(data.getUploadId())) {
+          for (String fileName : UploadManager.getInstance().getUploadFileNames(userId, data.getUploadId())) {
             logger.info("    - " + fileName);
           }
 
@@ -107,7 +107,7 @@ public class ImpexServerResource extends CedarMicroserviceResource {
               // Set import status to 'PENDING' for all the files that are part of the upload
               CadsrImportStatusManager.getInstance().initImportStatus(data.getUploadId(), userId, cedarFolderId);
 
-              for (String formFilePath : UploadManager.getInstance().getUploadFilePaths(data.getUploadId())) {
+              for (String formFilePath : UploadManager.getInstance().getUploadFilePaths(userId, data.getUploadId())) {
 
                 try {
                   // Set status to IN_PROGRESS
@@ -140,7 +140,7 @@ public class ImpexServerResource extends CedarMicroserviceResource {
                 }
               }
               // Remove the upload from the status map
-              UploadManager.getInstance().removeUploadStatus(data.getUploadId());
+              UploadManager.getInstance().removeUploadStatus(userId, data.getUploadId());
             } catch (UploadInstanceNotFoundException e) {
               logger.error("Upload instance not found: " + e.getMessage());
             }

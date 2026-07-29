@@ -144,7 +144,7 @@ public class CadsrImportStatusManager {
    */
   public synchronized void initImportStatus(String uploadId, String ownerUserId, String destinationCedarFolderId) {
     // Get the file names from the UploadManager
-    UploadStatus uploadStatus = UploadManager.getInstance().getUploadStatus(uploadId);
+    UploadStatus uploadStatus = UploadManager.getInstance().getUploadStatus(ownerUserId, uploadId);
     Map<String, CadsrFileImportStatus> filesImportStatus = new HashMap<>();
     for (FileUploadStatus fileUploadStatus : uploadStatus.getFilesUploadStatus().values()) {
       String fileName = ImpexUtil.getFileNameFromFilePath(fileUploadStatus.getFileLocalPath());
