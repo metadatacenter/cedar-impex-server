@@ -98,17 +98,37 @@ public class CadsrImportStatusManager {
     return importStatus.get(uploadId);
   }
 
-  public Map<String, CadsrImportStatus> getAllStatuses() {
-    // An immutable snapshot, not the live map: the only caller serializes it, and iterating the live
-    // map while request and cleaner threads mutate it risks a ConcurrentModificationException.
-    return Map.copyOf(importStatus);
+  /**
+   * The status for an upload, but only if it belongs to {@code userId}; null otherwise, so a caller can
+   * neither read nor even confirm the existence of another user's import.
+   */
+  public CadsrImportStatus getStatusForUser(String uploadId, String userId) {
+    CadsrImportStatus status = importStatus.get(uploadId);
+    if (status != null && userId != null && userId.equals(status.getOwnerUserId())) {
+      return status;
+    }
+    return null;
+  }
+
+  /**
+   * An immutable snapshot of only the given user's imports. This replaces the former getAllStatuses(),
+   * which returned every user's imports (filenames, reports, destination folder ids) to any caller.
+   */
+  public Map<String, CadsrImportStatus> getStatusesForUser(String userId) {
+    Map<String, CadsrImportStatus> mine = new HashMap<>();
+    for (Map.Entry<String, CadsrImportStatus> entry : importStatus.entrySet()) {
+      if (userId != null && userId.equals(entry.getValue().getOwnerUserId())) {
+        mine.put(entry.getKey(), entry.getValue());
+      }
+    }
+    return Map.copyOf(mine);
   }
 
   /**
    * Adds the upload information to the map and sets the import status to PENDING for all the forms
    * @param uploadId
    */
-  public synchronized void initImportStatus(String uploadId, String destinationCedarFolderId) {
+  public synchronized void initImportStatus(String uploadId, String ownerUserId, String destinationCedarFolderId) {
     // Get the file names from the UploadManager
     UploadStatus uploadStatus = UploadManager.getInstance().getUploadStatus(uploadId);
     Map<String, CadsrFileImportStatus> filesImportStatus = new HashMap<>();
@@ -116,7 +136,7 @@ public class CadsrImportStatusManager {
       String fileName = ImpexUtil.getFileNameFromFilePath(fileUploadStatus.getFileLocalPath());
       filesImportStatus.put(fileName, new CadsrFileImportStatus(fileName, ImportStatus.PENDING, Instant.now(), ""));
     }
-    importStatus.put(uploadId, new CadsrImportStatus(uploadId, filesImportStatus, destinationCedarFolderId));
+    importStatus.put(uploadId, new CadsrImportStatus(uploadId, ownerUserId, filesImportStatus, destinationCedarFolderId));
   }
 
   /**

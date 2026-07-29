@@ -105,7 +105,7 @@ public class ImpexServerResource extends CedarMicroserviceResource {
             try {
               String cedarFolderId = folderId != null ? folderId : c.getCedarUser().getHomeFolderId();
               // Set import status to 'PENDING' for all the files that are part of the upload
-              CadsrImportStatusManager.getInstance().initImportStatus(data.getUploadId(), cedarFolderId);
+              CadsrImportStatusManager.getInstance().initImportStatus(data.getUploadId(), userId, cedarFolderId);
 
               for (String formFilePath : UploadManager.getInstance().getUploadFilePaths(data.getUploadId())) {
 
@@ -196,18 +196,20 @@ public class ImpexServerResource extends CedarMicroserviceResource {
 
     CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
+    String userId = c.getCedarUser().getId();
 
     try {
       if (uploadId != null) {
-        if (!CadsrImportStatusManager.getInstance().exists(uploadId)) {
+        // Owner-scoped: not-found and not-owned are answered identically, so a user cannot probe for
+        // the existence of another user's imports.
+        CadsrImportStatus status = CadsrImportStatusManager.getInstance().getStatusForUser(uploadId, userId);
+        if (status == null) {
           return CedarResponse.notFound().errorMessage("The specified uploadId cannot be found").id(uploadId).build();
-        } else {
-          CadsrImportStatus status = CadsrImportStatusManager.getInstance().getStatus(uploadId);
-          JsonNode output = JsonMapper.MAPPER.valueToTree(status);
-          return Response.ok().entity(output).build();
         }
+        JsonNode output = JsonMapper.MAPPER.valueToTree(status);
+        return Response.ok().entity(output).build();
       } else {
-        JsonNode output = JsonMapper.MAPPER.valueToTree(CadsrImportStatusManager.getInstance().getAllStatuses());
+        JsonNode output = JsonMapper.MAPPER.valueToTree(CadsrImportStatusManager.getInstance().getStatusesForUser(userId));
         return Response.ok().entity(output).build();
       }
     } catch (Exception e) {
