@@ -137,11 +137,21 @@ public class FlowUploadUtil {
       IOException {
     // The chunk offset comes from client-supplied values; validate before trusting it as a file
     // offset, or a client could seek arbitrarily and create a huge sparse file.
-    if (data.flowChunkNumber < 1 || data.flowChunkSize < 0) {
+    if (data.flowChunkNumber < 1 || data.flowChunkSize < 0 || contentLength < 0) {
       throw new IOException("Invalid chunk coordinates");
     }
-    long offset = (data.flowChunkNumber - 1) * data.flowChunkSize;
-    if (offset < 0 || offset + contentLength > MAX_UPLOAD_BYTES) {
+    if (data.flowTotalSize < 0 || data.flowTotalSize > MAX_UPLOAD_BYTES) {
+      throw new IOException("Declared total upload size exceeds the allowed maximum");
+    }
+    // multiplyExact/addExact turn a wrap-around into an exception instead of a value that would slip
+    // past the size check as a negative number; the subtraction form avoids overflow entirely.
+    long offset;
+    try {
+      offset = Math.multiplyExact(data.flowChunkNumber - 1, data.flowChunkSize);
+    } catch (ArithmeticException e) {
+      throw new IOException("Chunk offset overflow", e);
+    }
+    if (offset < 0 || offset > MAX_UPLOAD_BYTES || contentLength > MAX_UPLOAD_BYTES - offset) {
       throw new IOException("Upload offset/size exceeds the allowed maximum");
     }
     raf.seek(offset);
