@@ -2,9 +2,11 @@ package org.metadatacenter.impex;
 
 import io.dropwizard.core.setup.Bootstrap;
 import io.dropwizard.core.setup.Environment;
+import io.dropwizard.lifecycle.Managed;
 import org.metadatacenter.cedar.util.dw.CedarDefaultHealthCheck;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceApplication;
 import org.metadatacenter.config.CedarConfig;
+import org.metadatacenter.impex.imp.cadsr.CadsrImportStatusManager;
 import org.metadatacenter.impex.resources.IndexResource;
 import org.metadatacenter.impex.resources.ImpexServerResource;
 import org.metadatacenter.model.ServerName;
@@ -41,6 +43,18 @@ public class ImpexServerApplication extends CedarMicroserviceApplication<ImpexSe
 
     final CedarDefaultHealthCheck healthCheck = new CedarDefaultHealthCheck();
     environment.healthChecks().register("message", healthCheck);
+
+    // Stop the caDSR import-status cleaner's scheduled executor cleanly on server shutdown.
+    environment.lifecycle().manage(new Managed() {
+      @Override
+      public void start() {
+      }
+
+      @Override
+      public void stop() {
+        CadsrImportStatusManager.shutdownIfRunning();
+      }
+    });
 
   }
 }

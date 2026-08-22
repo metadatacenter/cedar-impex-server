@@ -58,7 +58,12 @@ public class CadsrImportStatusManager {
    * Uses an executor to clear the older items in the importStatus map periodically
    */
   public void initUploadsCleanerExecutor() {
-    executor = Executors.newSingleThreadScheduledExecutor();
+    executor = Executors.newSingleThreadScheduledExecutor(runnable -> {
+      // Daemon so the periodic cleaner thread never keeps the JVM alive during shutdown.
+      Thread thread = new Thread(runnable, "cadsr-import-status-cleaner");
+      thread.setDaemon(true);
+      return thread;
+    });
     Runnable cleanTask = () -> {
       logger.info("Checking if there are any old imports that can be removed (map size: " + importStatus.size() + ")");
       List<String> uploadIdsToBeRemoved = new ArrayList<>();
@@ -69,10 +74,19 @@ public class CadsrImportStatusManager {
           // of them is more recent than the threshold, we don't remove the uploadId from the map
           // Elapsed time from a fixed instant, not LocalTime: LocalTime wraps at midnight, so an
           // import finished shortly before midnight would be misjudged as arbitrarily old or young.
-          boolean terminal = fileStatus.getImportStatus() == ImportStatus.COMPLETE
-              || fileStatus.getImportStatus() == ImportStatus.ERROR;
+          // Completed imports are retained for the short threshold; errored imports for the longer one, so a
+          // user has time to read the failure report. Pick the threshold by status instead of OR-ing the two
+          // (the old `age >= 10 || age >= 60` always collapsed to `age >= 10`, evicting errors after 10 min).
+          long thresholdMinutes;
+          if (fileStatus.getImportStatus() == ImportStatus.COMPLETE) {
+            thresholdMinutes = CLEAN_THRESHOLD_1_MINUTES;
+          } else if (fileStatus.getImportStatus() == ImportStatus.ERROR) {
+            thresholdMinutes = CLEAN_THRESHOLD_2_MINUTES;
+          } else {
+            break; // still PENDING or IN_PROGRESS: keep the whole upload
+          }
           long ageMinutes = Duration.between(fileStatus.getStatusTime(), Instant.now()).toMinutes();
-          if (terminal && (ageMinutes >= CLEAN_THRESHOLD_1_MINUTES || ageMinutes >= CLEAN_THRESHOLD_2_MINUTES)) {
+          if (ageMinutes >= thresholdMinutes) {
             countMeetsConditions++;
           }
           else {
@@ -98,25 +112,45 @@ public class CadsrImportStatusManager {
     return importStatus.get(uploadId);
   }
 
-  public Map<String, CadsrImportStatus> getAllStatuses() {
-    // An immutable snapshot, not the live map: the only caller serializes it, and iterating the live
-    // map while request and cleaner threads mutate it risks a ConcurrentModificationException.
-    return Map.copyOf(importStatus);
+  /**
+   * The status for an upload, but only if it belongs to {@code userId}; null otherwise, so a caller can
+   * neither read nor even confirm the existence of another user's import.
+   */
+  public CadsrImportStatus getStatusForUser(String uploadId, String userId) {
+    CadsrImportStatus status = importStatus.get(uploadId);
+    if (status != null && userId != null && userId.equals(status.getOwnerUserId())) {
+      return status;
+    }
+    return null;
+  }
+
+  /**
+   * An immutable snapshot of only the given user's imports. This replaces the former getAllStatuses(),
+   * which returned every user's imports (filenames, reports, destination folder ids) to any caller.
+   */
+  public Map<String, CadsrImportStatus> getStatusesForUser(String userId) {
+    Map<String, CadsrImportStatus> mine = new HashMap<>();
+    for (Map.Entry<String, CadsrImportStatus> entry : importStatus.entrySet()) {
+      if (userId != null && userId.equals(entry.getValue().getOwnerUserId())) {
+        mine.put(entry.getKey(), entry.getValue());
+      }
+    }
+    return Map.copyOf(mine);
   }
 
   /**
    * Adds the upload information to the map and sets the import status to PENDING for all the forms
    * @param uploadId
    */
-  public synchronized void initImportStatus(String uploadId, String destinationCedarFolderId) {
+  public synchronized void initImportStatus(String uploadId, String ownerUserId, String destinationCedarFolderId) {
     // Get the file names from the UploadManager
-    UploadStatus uploadStatus = UploadManager.getInstance().getUploadStatus(uploadId);
+    UploadStatus uploadStatus = UploadManager.getInstance().getUploadStatus(ownerUserId, uploadId);
     Map<String, CadsrFileImportStatus> filesImportStatus = new HashMap<>();
     for (FileUploadStatus fileUploadStatus : uploadStatus.getFilesUploadStatus().values()) {
       String fileName = ImpexUtil.getFileNameFromFilePath(fileUploadStatus.getFileLocalPath());
       filesImportStatus.put(fileName, new CadsrFileImportStatus(fileName, ImportStatus.PENDING, Instant.now(), ""));
     }
-    importStatus.put(uploadId, new CadsrImportStatus(uploadId, filesImportStatus, destinationCedarFolderId));
+    importStatus.put(uploadId, new CadsrImportStatus(uploadId, ownerUserId, filesImportStatus, destinationCedarFolderId));
   }
 
   /**
@@ -136,6 +170,9 @@ public class CadsrImportStatusManager {
 
     CadsrFileImportStatus fis = importStatus.get(uploadId).getFilesImportStatus().get(fileName);
     fis.setImportStatus(status);
+    // Cleanup age is measured from the latest status change. Without this, a file keeps its PENDING
+    // timestamp, so a long-running import could be swept the moment it reached COMPLETE.
+    fis.setStatusTime(Instant.now());
 
     Map<String, CadsrFileImportStatus> fisMap = importStatus.get(uploadId).getFilesImportStatus();
     fisMap.put(fileName, fis);
@@ -149,6 +186,23 @@ public class CadsrImportStatusManager {
 
   private synchronized void removeImportStatus(String uploadId) {
     importStatus.remove(uploadId);
+  }
+
+  /**
+   * Stops the periodic cleaner. Wired into the server lifecycle so the scheduled executor is released on
+   * shutdown; harmless if never called, since the cleaner thread is a daemon.
+   */
+  public synchronized void shutdown() {
+    if (executor != null) {
+      executor.shutdownNow();
+    }
+  }
+
+  /** Stops the cleaner only if the singleton was ever created, so it isn't instantiated just to shut it down. */
+  public static synchronized void shutdownIfRunning() {
+    if (singleInstance != null) {
+      singleInstance.shutdown();
+    }
   }
 
   public boolean exists(String uploadId) {

@@ -1,5 +1,6 @@
 package org.metadatacenter.impex.upload;
 
+import jakarta.ws.rs.BadRequestException;
 import org.apache.commons.fileupload2.core.DiskFileItem;
 import org.apache.commons.fileupload2.core.DiskFileItemFactory;
 import org.apache.commons.fileupload2.core.FileUploadException;
@@ -80,25 +81,25 @@ public class FlowUploadUtil {
 
     // Throw an exception if any of the expected fields is missing
     if (uploadId == null) {
-      throw new InternalError("Missing field: uploadId");
+      throw new BadRequestException("Missing field: uploadId");
     } else if (numberOfFiles == -1) {
-      throw new InternalError("Missing field: numberOfFiles");
+      throw new BadRequestException("Missing field: numberOfFiles");
     } else if (flowChunkNumber == -1) {
-      throw new InternalError("Missing field: flowChunkNumber");
+      throw new BadRequestException("Missing field: flowChunkNumber");
     } else if (flowChunkSize == -1) {
-      throw new InternalError("Missing field: flowChunkSize");
+      throw new BadRequestException("Missing field: flowChunkSize");
     } else if (flowCurrentChunkSize == -1) {
-      throw new InternalError("Missing field: flowCurrentChunkSize");
+      throw new BadRequestException("Missing field: flowCurrentChunkSize");
     } else if (flowTotalSize == -1) {
-      throw new InternalError("Missing field: flowTotalSize");
+      throw new BadRequestException("Missing field: flowTotalSize");
     } else if (flowIdentifier == null) {
-      throw new InternalError("Missing field: flowIdentifier");
+      throw new BadRequestException("Missing field: flowIdentifier");
     } else if (flowFilename == null) {
-      throw new InternalError("Missing field: flowFilename");
+      throw new BadRequestException("Missing field: flowFilename");
     } else if (flowRelativePath == null) {
-      throw new InternalError("Missing field: flowRelativePath");
+      throw new BadRequestException("Missing field: flowRelativePath");
     } else if (flowTotalChunks == -1) {
-      throw new InternalError("Missing field: flowTotalChunks");
+      throw new BadRequestException("Missing field: flowTotalChunks");
     }
 
     return new FlowData(uploadId, numberOfFiles, flowChunkNumber, flowChunkSize,
@@ -137,11 +138,21 @@ public class FlowUploadUtil {
       IOException {
     // The chunk offset comes from client-supplied values; validate before trusting it as a file
     // offset, or a client could seek arbitrarily and create a huge sparse file.
-    if (data.flowChunkNumber < 1 || data.flowChunkSize < 0) {
+    if (data.flowChunkNumber < 1 || data.flowChunkSize < 0 || contentLength < 0) {
       throw new IOException("Invalid chunk coordinates");
     }
-    long offset = (data.flowChunkNumber - 1) * data.flowChunkSize;
-    if (offset < 0 || offset + contentLength > MAX_UPLOAD_BYTES) {
+    if (data.flowTotalSize < 0 || data.flowTotalSize > MAX_UPLOAD_BYTES) {
+      throw new IOException("Declared total upload size exceeds the allowed maximum");
+    }
+    // multiplyExact/addExact turn a wrap-around into an exception instead of a value that would slip
+    // past the size check as a negative number; the subtraction form avoids overflow entirely.
+    long offset;
+    try {
+      offset = Math.multiplyExact(data.flowChunkNumber - 1, data.flowChunkSize);
+    } catch (ArithmeticException e) {
+      throw new IOException("Chunk offset overflow", e);
+    }
+    if (offset < 0 || offset > MAX_UPLOAD_BYTES || contentLength > MAX_UPLOAD_BYTES - offset) {
       throw new IOException("Upload offset/size exceeds the allowed maximum");
     }
     raf.seek(offset);
