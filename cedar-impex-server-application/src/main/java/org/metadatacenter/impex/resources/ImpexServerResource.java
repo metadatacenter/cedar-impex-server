@@ -3,7 +3,7 @@ package org.metadatacenter.impex.resources;
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.fileupload2.core.FileUploadException;
-import org.apache.commons.fileupload2.jakarta.servlet5.JakartaServletFileUpload;
+import org.apache.commons.fileupload2.jakarta.servlet6.JakartaServletFileUpload;
 import org.metadatacenter.cadsr.form.schema.Form;
 import org.metadatacenter.cadsr.ingestor.form.FormParseResult;
 import org.metadatacenter.cadsr.ingestor.form.FormUtil;
@@ -217,4 +217,3 @@ public class ImpexServerResource extends CedarMicroserviceResource {
     }
   }
 }
-
