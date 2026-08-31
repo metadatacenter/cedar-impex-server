@@ -1,6 +1,12 @@
 package org.metadatacenter.impex.resources;
 
 import com.codahale.metrics.annotation.Timed;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.fileupload2.core.FileUploadException;
 import org.apache.commons.fileupload2.jakarta.servlet6.JakartaServletFileUpload;
@@ -44,6 +50,8 @@ import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 
 @Path("/command")
 @Produces(MediaType.APPLICATION_JSON)
+@Tag(name = "caDSR import")
+@SecurityRequirement(name = "api_key")
 public class ImpexServerResource extends CedarMicroserviceResource {
 
   final static Logger logger = LoggerFactory.getLogger(ImpexServerResource.class);
@@ -66,7 +74,22 @@ public class ImpexServerResource extends CedarMicroserviceResource {
   @Timed
   @Path("/import-cadsr-forms")
   @Consumes(MediaType.MULTIPART_FORM_DATA)
-  public Response importCadsrForm(@QueryParam("folderId") String folderId) throws CedarException {
+  @Operation(summary = "Upload caDSR forms and import them as templates",
+      description = "Upload one or more caDSR XML forms, a chunk per request, and translate each "
+          + "into a CEDAR template. The upload is chunked, so a caller sends this repeatedly; the "
+          + "import starts by itself once the last chunk of an upload arrives. Translation then runs "
+          + "in the background, so a 200 means the chunk was stored and any import it completed was "
+          + "started, not that a template exists yet. Poll the import status to find out how it "
+          + "went.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "The chunk was stored; any import it completed has been started"),
+      @ApiResponse(responseCode = "400", description = "The request is not a multipart upload"),
+      @ApiResponse(responseCode = "401", description = "Unauthorized"),
+      @ApiResponse(responseCode = "500", description = "The chunk could not be stored")
+  })
+  public Response importCadsrForm(
+      @Parameter(description = "Folder the templates are created in. Defaults to the caller's home folder.")
+      @QueryParam("folderId") String folderId) throws CedarException {
 
     CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
@@ -192,7 +215,21 @@ public class ImpexServerResource extends CedarMicroserviceResource {
   @GET
   @Timed
   @Path("/import-cadsr-forms-status")
-  public Response importStatus(@QueryParam("uploadId") String uploadId) throws CedarException {
+  @Operation(summary = "Get the status of a caDSR import",
+      description = "Report how an import is going, file by file: pending, in progress, complete, or "
+          + "in error, with the messages the translation produced. Without an upload identifier it "
+          + "reports every import the caller has run. Scoped to the caller either way, and an upload "
+          + "belonging to someone else is reported as not found rather than refused, so this cannot "
+          + "be used to discover another user's imports.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "The import status, or every status for the caller"),
+      @ApiResponse(responseCode = "401", description = "Unauthorized"),
+      @ApiResponse(responseCode = "404", description = "The caller has no upload with this identifier"),
+      @ApiResponse(responseCode = "500", description = "Internal server error")
+  })
+  public Response importStatus(
+      @Parameter(description = "Upload identifier. Omit it to get every import the caller has run.")
+      @QueryParam("uploadId") String uploadId) throws CedarException {
 
     CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
