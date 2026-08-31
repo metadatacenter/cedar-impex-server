@@ -3,11 +3,11 @@ package org.metadatacenter.impex;
 import io.dropwizard.core.setup.Bootstrap;
 import io.dropwizard.core.setup.Environment;
 import io.dropwizard.lifecycle.Managed;
+import org.metadatacenter.cedar.util.dw.CedarMicroserviceIndexResource;
 import org.metadatacenter.cedar.util.dw.CedarDefaultHealthCheck;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceApplication;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.impex.imp.cadsr.CadsrImportStatusManager;
-import org.metadatacenter.impex.resources.IndexResource;
 import org.metadatacenter.impex.resources.ImpexServerResource;
 import org.metadatacenter.model.ServerName;
 
@@ -34,7 +34,8 @@ public class ImpexServerApplication extends CedarMicroserviceApplication<ImpexSe
   @Override
   public void runApp(ImpexServerConfiguration configuration, Environment environment) {
 
-    final IndexResource index = new IndexResource(cedarConfig);
+    final CedarMicroserviceIndexResource index =
+        new CedarMicroserviceIndexResource(cedarConfig, getServerName());
     environment.jersey().register(index);
 
     // Register resources
