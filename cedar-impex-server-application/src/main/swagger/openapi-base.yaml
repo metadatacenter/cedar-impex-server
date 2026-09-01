@@ -1,0 +1,23 @@
+# Base OpenAPI document merged into the generated spec by io.swagger.core.v3:swagger-maven-plugin.
+# It seeds the info block (version stamped from the POM via resource filtering) and the api_key
+# security scheme that every resource class references with @SecurityRequirement(name = "api_key").
+openapi: 3.0.1
+info:
+  title: CEDAR Impex Server API
+  description: |
+    Better Metadata - Better Science
+
+    The impex server brings metadata into CEDAR from outside it. Today that means caDSR forms:
+    XML uploaded in chunks, translated into CEDAR templates, and saved into a folder of the caller's
+    choosing.
+    
+    Translation runs in the background, so an upload returns before the templates exist. The status
+    endpoint is how a caller learns what became of each file.
+  version: ${project.version}
+components:
+  securitySchemes:
+    api_key:
+      type: apiKey
+      name: Authorization
+      in: header
+      description: "Your CEDAR API key, using the format 'apiKey <yourApiKey>'"

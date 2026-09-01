@@ -1,0 +1,86 @@
+{
+  "openapi" : "3.0.1",
+  "info" : {
+    "description" : "Better Metadata - Better Science\n\nThe impex server brings metadata into CEDAR from outside it. Today that means caDSR forms:\nXML uploaded in chunks, translated into CEDAR templates, and saved into a folder of the caller's\nchoosing.\n\nTranslation runs in the background, so an upload returns before the templates exist. The status\nendpoint is how a caller learns what became of each file.\n",
+    "title" : "CEDAR Impex Server API",
+    "version" : "2.9.4"
+  },
+  "paths" : {
+    "/command/import-cadsr-forms" : {
+      "post" : {
+        "description" : "Upload one or more caDSR XML forms, a chunk per request, and translate each into a CEDAR template. The upload is chunked, so a caller sends this repeatedly; the import starts by itself once the last chunk of an upload arrives. Translation then runs in the background, so a 200 means the chunk was stored and any import it completed was started, not that a template exists yet. Poll the import status to find out how it went.",
+        "operationId" : "importCadsrForm",
+        "parameters" : [ {
+          "description" : "Folder the templates are created in. Defaults to the caller's home folder.",
+          "in" : "query",
+          "name" : "folderId",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The chunk was stored; any import it completed has been started"
+          },
+          "400" : {
+            "description" : "The request is not a multipart upload"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "500" : {
+            "description" : "The chunk could not be stored"
+          }
+        },
+        "security" : [ {
+          "api_key" : [ ]
+        } ],
+        "summary" : "Upload caDSR forms and import them as templates",
+        "tags" : [ "caDSR import" ]
+      }
+    },
+    "/command/import-cadsr-forms-status" : {
+      "get" : {
+        "description" : "Report how an import is going, file by file: pending, in progress, complete, or in error, with the messages the translation produced. Without an upload identifier it reports every import the caller has run. Scoped to the caller either way, and an upload belonging to someone else is reported as not found rather than refused, so this cannot be used to discover another user's imports.",
+        "operationId" : "importStatus",
+        "parameters" : [ {
+          "description" : "Upload identifier. Omit it to get every import the caller has run.",
+          "in" : "query",
+          "name" : "uploadId",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The import status, or every status for the caller"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "404" : {
+            "description" : "The caller has no upload with this identifier"
+          },
+          "500" : {
+            "description" : "Internal server error"
+          }
+        },
+        "security" : [ {
+          "api_key" : [ ]
+        } ],
+        "summary" : "Get the status of a caDSR import",
+        "tags" : [ "caDSR import" ]
+      }
+    }
+  },
+  "components" : {
+    "securitySchemes" : {
+      "api_key" : {
+        "description" : "Your CEDAR API key, using the format 'apiKey <yourApiKey>'",
+        "in" : "header",
+        "name" : "Authorization",
+        "type" : "apiKey"
+      }
+    }
+  }
+}
