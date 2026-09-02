@@ -10,7 +10,7 @@ info:
     Translation runs in the background, so an upload returns before the templates exist. The status
     endpoint is how a caller learns what became of each file.
   title: CEDAR Impex Server API
-  version: 2.9.6-SNAPSHOT
+  version: 2.9.7-SNAPSHOT
 paths:
   /command/import-cadsr-forms:
     post:
