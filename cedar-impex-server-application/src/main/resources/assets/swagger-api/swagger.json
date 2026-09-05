@@ -3,7 +3,7 @@
   "info" : {
     "description" : "Better Metadata - Better Science\n\nThe impex server brings metadata into CEDAR from outside it. Today that means caDSR forms:\nXML uploaded in chunks, translated into CEDAR templates, and saved into a folder of the caller's\nchoosing.\n\nTranslation runs in the background, so an upload returns before the templates exist. The status\nendpoint is how a caller learns what became of each file.\n",
     "title" : "CEDAR Impex Server API",
-    "version" : "2.9.7"
+    "version" : "2.9.8"
   },
   "paths" : {
     "/command/import-cadsr-forms" : {
