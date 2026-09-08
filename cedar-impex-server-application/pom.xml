@@ -180,6 +180,7 @@
         <configuration>
           <resourcePackages>
             <package>org.metadatacenter.impex.resources</package>
+            <package>org.metadatacenter.cedar.util.dw</package>
           </resourcePackages>
         </configuration>
       </plugin>
