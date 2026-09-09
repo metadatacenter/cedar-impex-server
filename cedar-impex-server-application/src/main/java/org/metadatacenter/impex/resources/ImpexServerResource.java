@@ -142,7 +142,7 @@ public class ImpexServerResource extends CedarMicroserviceResource {
                   Form form = FormUtil.getForm(new FileInputStream(formFilePath));
                   FormParseResult parseResult = FormUtil.getTemplateMapFromForm(form,
                       data.getUploadId() + "_" + fileName);
-                  //logger.info(JsonMapper.MAPPER.writeValueAsString(parseResult.getTemplateMap()));
+                  //logger.info(JsonMapper.STRICT_MAPPER.writeValueAsString(parseResult.getTemplateMap()));
                   CadsrImportStatusManager.getInstance().writeReportMessages(data.uploadId, fileName,
                       parseResult.getReportMessages());
                   // Upload template to CEDAR
@@ -204,7 +204,7 @@ public class ImpexServerResource extends CedarMicroserviceResource {
 //        return CedarResponse.notFound().errorMessage("The specified uploadId cannot be found").id(uploadId).build();
 //      } else {
 //        CadsrImportStatus status = CadsrImportStatusManager.getInstance().getStatus(uploadId);
-//        JsonNode output = JsonMapper.MAPPER.valueToTree(status);
+//        JsonNode output = JsonMapper.STRICT_MAPPER.valueToTree(status);
 //        return Response.ok().entity(output).build();
 //      }
 //    } catch (Exception e) {
@@ -243,10 +243,10 @@ public class ImpexServerResource extends CedarMicroserviceResource {
         if (status == null) {
           return CedarResponse.notFound().errorMessage("The specified uploadId cannot be found").id(uploadId).build();
         }
-        JsonNode output = JsonMapper.MAPPER.valueToTree(status);
+        JsonNode output = JsonMapper.STRICT_MAPPER.valueToTree(status);
         return Response.ok().entity(output).build();
       } else {
-        JsonNode output = JsonMapper.MAPPER.valueToTree(CadsrImportStatusManager.getInstance().getStatusesForUser(userId));
+        JsonNode output = JsonMapper.STRICT_MAPPER.valueToTree(CadsrImportStatusManager.getInstance().getStatusesForUser(userId));
         return Response.ok().entity(output).build();
       }
     } catch (Exception e) {
