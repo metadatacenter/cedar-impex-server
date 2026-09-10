@@ -171,14 +171,14 @@ public class ImpexServerResource extends CedarMicroserviceResource {
         }
       } catch (FileUploadException e) {
         return CedarResponse.internalServerError()
-            .errorMessage("Error uploading file: " + e)
+            .message("Error uploading file: " + e)
             .exception(e).build();
       } catch (IllegalAccessException e) {
         return CedarResponse.internalServerError()
             .exception(e).build();
       } catch (UploadInstanceNotFoundException e) {
         return CedarResponse.internalServerError()
-            .errorMessage("Upload Id not found")
+            .message("Upload Id not found")
             .exception(e).build();
       } catch (IOException e) {
         return CedarResponse.internalServerError()
@@ -201,7 +201,7 @@ public class ImpexServerResource extends CedarMicroserviceResource {
 //
 //    try {
 //      if (!CadsrImportStatusManager.getInstance().exists(uploadId)) {
-//        return CedarResponse.notFound().errorMessage("The specified uploadId cannot be found").id(uploadId).build();
+//        return CedarResponse.notFound().message("The specified uploadId cannot be found").id(uploadId).build();
 //      } else {
 //        CadsrImportStatus status = CadsrImportStatusManager.getInstance().getStatus(uploadId);
 //        JsonNode output = JsonMapper.STRICT_MAPPER.valueToTree(status);
@@ -241,7 +241,7 @@ public class ImpexServerResource extends CedarMicroserviceResource {
         // the existence of another user's imports.
         CadsrImportStatus status = CadsrImportStatusManager.getInstance().getStatusForUser(uploadId, userId);
         if (status == null) {
-          return CedarResponse.notFound().errorMessage("The specified uploadId cannot be found").id(uploadId).build();
+          return CedarResponse.notFound().message("The specified uploadId cannot be found").id(uploadId).build();
         }
         JsonNode output = JsonMapper.STRICT_MAPPER.valueToTree(status);
         return Response.ok().entity(output).build();
