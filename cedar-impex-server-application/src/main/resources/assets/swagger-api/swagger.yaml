@@ -3,6 +3,13 @@ info:
   description: |
     Better Metadata - Better Science
 
+    Folders and artifacts use type-qualified selectors: `folders/<uuid>`, `templates/<uuid>`,
+    `template-elements/<uuid>`, `template-fields/<uuid>`, or `template-instances/<uuid>`.
+    Typed routes include the type once, for example `/templates/<uuid>`. Query parameters and
+    command-body selectors retain the type, including folder parameters. Percent-encoded full
+    IRIs remain accepted for compatibility. Stored document identities and references remain
+    full IRIs; legacy repository hosts must remain absolute until their data is migrated.
+
     The impex server brings metadata into CEDAR from outside it. Today that means caDSR forms:
     XML uploaded in chunks, translated into CEDAR templates, and saved into a folder of the caller's
     choosing.
