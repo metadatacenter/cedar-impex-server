@@ -94,6 +94,10 @@ public class ImpexServerResource extends CedarMicroserviceResource {
     CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
 
+    String cedarFolderId = folderId != null
+        ? linkedDataUtil.resolveResourceId(org.metadatacenter.model.CedarResourceType.FOLDER, folderId)
+        : c.getCedarUser().getHomeFolderId();
+
     // Check that it's a file upload request
     if (JakartaServletFileUpload.isMultipartContent(request)) {
 
@@ -126,7 +130,6 @@ public class ImpexServerResource extends CedarMicroserviceResource {
           new Thread(() -> {
             String fileName = null;
             try {
-              String cedarFolderId = folderId != null ? folderId : c.getCedarUser().getHomeFolderId();
               // Set import status to 'PENDING' for all the files that are part of the upload
               CadsrImportStatusManager.getInstance().initImportStatus(data.getUploadId(), userId, cedarFolderId);
 
