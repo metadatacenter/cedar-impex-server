@@ -101,21 +101,16 @@ public class ImpexServerResource extends CedarMicroserviceResource {
     // Check that it's a file upload request
     if (JakartaServletFileUpload.isMultipartContent(request)) {
 
-      try {
-        String userId = c.getCedarUser().getId();
-        // Extract data from the request
-        FlowData data = FlowUploadUtil.getFlowData(request);
+      String userId = c.getCedarUser().getId();
+      try (FlowData data = FlowUploadUtil.getFlowData(request)) {
         // Every request contains a file chunk that we will save to the appropriate position of a local file
         String submissionLocalFolderPath = FlowUploadUtil
             .getUploadLocalFolderPath("impex-upload", userId, data.getUploadId());
         FlowUploadUtil.saveToLocalFile(data, userId, request.getContentLength(), submissionLocalFolderPath);
 
-        // Update the submission upload status
-        UploadManager.getInstance().updateStatus(data, userId, submissionLocalFolderPath);
-
         // When the upload is complete, trigger the import process
-        if (UploadManager.getInstance().isUploadComplete(userId, data.getUploadId())
-            && !CadsrImportStatusManager.getInstance().exists(data.getUploadId())) {
+        if (!CadsrImportStatusManager.getInstance().exists(data.getUploadId())
+            && UploadManager.getInstance().claimComplete(userId, data.getUploadId())) {
 
           logger.info("File(s) successfully uploaded to the Impex server: ");
           logger.info("  - Upload id: " + data.getUploadId());
@@ -169,6 +164,8 @@ public class ImpexServerResource extends CedarMicroserviceResource {
               UploadManager.getInstance().removeUploadStatus(userId, data.getUploadId());
             } catch (UploadInstanceNotFoundException e) {
               logger.error("Upload instance not found: " + e.getMessage());
+            } finally {
+              UploadManager.getInstance().releaseClaim(userId, data.getUploadId());
             }
           }).start();
         }
