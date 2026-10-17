@@ -42,7 +42,14 @@
             "description" : "The chunk was stored; any import it completed has been started"
           },
           "400" : {
-            "description" : "The request is not a multipart upload"
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "The request is not a multipart upload, or the chunk is refused because an upload field is missing or malformed or the chunk disagrees with the upload it belongs to. A refused chunk's message names the problem."
           },
           "401" : {
             "description" : "Unauthorized"

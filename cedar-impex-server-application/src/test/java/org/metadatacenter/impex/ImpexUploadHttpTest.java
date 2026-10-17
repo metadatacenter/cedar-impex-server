@@ -5,6 +5,8 @@ import io.dropwizard.testing.ResourceHelpers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import com.fasterxml.jackson.databind.JsonNode;
+import org.metadatacenter.util.json.JsonMapper;
 import org.metadatacenter.config.environment.CedarEnvironmentSource;
 import org.metadatacenter.impex.resources.ImpexServerResource;
 import org.metadatacenter.util.test.RouteSurface;
@@ -55,6 +57,24 @@ public class ImpexUploadHttpTest {
   @AfterAll
   public static void stopServer() {
     SERVER.after();
+  }
+
+  /**
+   * A refused chunk names its problem in the shared error body. The refusal was a BadRequestException
+   * without an entity, which reached the client as a 400 whose body carried no message.
+   */
+  @Test
+  void aRefusedChunkNamesItsProblemInTheSharedErrorBody() throws Exception {
+    String body = "--matrix\r\nContent-Disposition: form-data; name=\"numberOfFiles\"\r\n\r\n1\r\n--matrix--\r\n";
+    var request = HttpRequest.newBuilder(URI.create("http://localhost:"+SERVER.getLocalPort()+"/command/import-cadsr-forms"))
+        .header("Authorization",TestAuthUtil.getTestUser1AuthHeader(config))
+        .header("Content-Type","multipart/form-data; boundary=matrix")
+        .POST(HttpRequest.BodyPublishers.ofString(body)).build();
+    var response = HttpClient.newHttpClient().send(request,HttpResponse.BodyHandlers.ofString());
+    assertEquals(400,response.statusCode(),response.body());
+    JsonNode error = JsonMapper.STRICT_MAPPER.readTree(response.body());
+    assertEquals(400,error.path("statusCode").asInt(),response.body());
+    assertEquals("Missing field: uploadId",error.path("message").asText(),response.body());
   }
 
   static Stream<Arguments> requests() {

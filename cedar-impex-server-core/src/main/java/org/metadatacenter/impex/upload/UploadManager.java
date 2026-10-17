@@ -1,6 +1,5 @@
 package org.metadatacenter.impex.upload;
 
-import jakarta.ws.rs.BadRequestException;
 import org.metadatacenter.impex.exception.UploadInstanceNotFoundException;
 import org.metadatacenter.util.upload.ChunkUploadStore;
 import java.io.IOException;
@@ -35,7 +34,7 @@ public class UploadManager {
   }
   public List<String> getUploadFilePaths(String owner, String id) throws UploadInstanceNotFoundException {
     var status = required(owner, id);
-    if (!status.complete()) throw new BadRequestException("The upload is not complete");
+    if (!status.complete()) throw FlowUploadUtil.refused("The upload is not complete");
     return status.files().values().stream().map(ChunkUploadStore.FileStatus::path).toList();
   }
   public UploadStatus getUploadStatus(String owner, String id) {

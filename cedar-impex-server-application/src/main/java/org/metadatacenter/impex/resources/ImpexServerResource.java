@@ -3,6 +3,8 @@ package org.metadatacenter.impex.resources;
 import com.codahale.metrics.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -29,6 +31,7 @@ import org.metadatacenter.impex.upload.FlowUploadUtil;
 import org.metadatacenter.impex.upload.UploadManager;
 import org.metadatacenter.impex.util.ImpexUtil;
 import org.metadatacenter.rest.context.CedarRequestContext;
+import org.metadatacenter.util.http.CedarError;
 import org.metadatacenter.util.http.CedarResponse;
 import org.metadatacenter.util.json.JsonMapper;
 import org.slf4j.Logger;
@@ -83,7 +86,10 @@ public class ImpexServerResource extends CedarMicroserviceResource {
           + "went.")
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "The chunk was stored; any import it completed has been started"),
-      @ApiResponse(responseCode = "400", description = "The request is not a multipart upload"),
+      @ApiResponse(responseCode = "400", description = "The request is not a multipart upload, or the chunk is "
+          + "refused because an upload field is missing or malformed or the chunk disagrees with the upload it "
+          + "belongs to. A refused chunk's message names the problem.",
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
       @ApiResponse(responseCode = "401", description = "Unauthorized"),
       @ApiResponse(responseCode = "500", description = "The chunk could not be stored")
   })
