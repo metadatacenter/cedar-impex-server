@@ -60,9 +60,45 @@ paths:
             \ because an upload field is missing or malformed or the chunk disagrees\
             \ with the upload it belongs to. A refused chunk's message names the problem."
         "401":
-          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CedarError"
+          description: The request carries no valid credentials
+        "406":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CedarError"
+          description: The request does not accept a JSON response
+        "415":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CedarError"
+          description: The body is not declared as multipart/form-data
+        "429":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CedarError"
+          description: "The deployment limits each user's request rate, and the caller\
+            \ exceeded it"
         "500":
-          description: The chunk could not be stored
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CedarError"
+          description: "The multipart request could not be read, which the message\
+            \ reports, or the chunk could not be stored. The body's errorId identifies\
+            \ the failure in the server log."
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CedarError"
+          description: "The graph database, or another service the request depends\
+            \ on, is unavailable"
       security:
       - api_key: []
       summary: Upload caDSR forms and import them as templates
@@ -88,11 +124,43 @@ paths:
         "200":
           description: "The import status, or every status for the caller"
         "401":
-          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CedarError"
+          description: The request carries no valid credentials
         "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CedarError"
           description: The caller has no upload with this identifier
+        "406":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CedarError"
+          description: The request does not accept a JSON response
+        "429":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CedarError"
+          description: "The deployment limits each user's request rate, and the caller\
+            \ exceeded it"
         "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CedarError"
           description: Internal server error
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CedarError"
+          description: "The graph database, or another service the request depends\
+            \ on, is unavailable"
       security:
       - api_key: []
       summary: Get the status of a caDSR import

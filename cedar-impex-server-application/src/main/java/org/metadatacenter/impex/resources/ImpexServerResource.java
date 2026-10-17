@@ -90,8 +90,20 @@ public class ImpexServerResource extends CedarMicroserviceResource {
           + "refused because an upload field is missing or malformed or the chunk disagrees with the upload it "
           + "belongs to. A refused chunk's message names the problem.",
           content = @Content(schema = @Schema(implementation = CedarError.class))),
-      @ApiResponse(responseCode = "401", description = "Unauthorized"),
-      @ApiResponse(responseCode = "500", description = "The chunk could not be stored")
+      @ApiResponse(responseCode = "401", description = UNAUTHORIZED,
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "406", description = NOT_ACCEPTABLE,
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "415", description = "The body is not declared as multipart/form-data",
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "429", description = RATE_LIMITED,
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "500", description = "The multipart request could not be read, which the "
+          + "message reports, or the chunk could not be stored. The body's errorId identifies the failure in the "
+          + "server log.",
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "503", description = UNAVAILABLE,
+          content = @Content(schema = @Schema(implementation = CedarError.class)))
   })
   public Response importCadsrForm(
       @Parameter(description = "Folder the templates are created in. Defaults to the caller's home folder.")
@@ -176,8 +188,10 @@ public class ImpexServerResource extends CedarMicroserviceResource {
           }).start();
         }
       } catch (FileUploadException e) {
+        // The parser's exception names its own classes, so the client gets a plain message and the
+        // exception is logged under the body's errorId.
         return CedarResponse.internalServerError()
-            .message("Error uploading file: " + e)
+            .message("The multipart request could not be read")
             .exception(e).build();
       } catch (IllegalAccessException e) {
         return CedarResponse.internalServerError()
@@ -229,9 +243,18 @@ public class ImpexServerResource extends CedarMicroserviceResource {
           + "be used to discover another user's imports.")
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "The import status, or every status for the caller"),
-      @ApiResponse(responseCode = "401", description = "Unauthorized"),
-      @ApiResponse(responseCode = "404", description = "The caller has no upload with this identifier"),
-      @ApiResponse(responseCode = "500", description = "Internal server error")
+      @ApiResponse(responseCode = "401", description = UNAUTHORIZED,
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "404", description = "The caller has no upload with this identifier",
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "406", description = NOT_ACCEPTABLE,
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "429", description = RATE_LIMITED,
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "500", description = "Internal server error",
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "503", description = UNAVAILABLE,
+          content = @Content(schema = @Schema(implementation = CedarError.class)))
   })
   public Response importStatus(
       @Parameter(description = "Upload identifier. Omit it to get every import the caller has run.")
@@ -259,4 +282,11 @@ public class ImpexServerResource extends CedarMicroserviceResource {
       return CedarResponse.internalServerError().exception(e).build();
     }
   }
+
+  private static final String UNAUTHORIZED = "The request carries no valid credentials";
+  private static final String NOT_ACCEPTABLE = "The request does not accept a JSON response";
+  private static final String RATE_LIMITED = "The deployment limits each user's request rate, and the caller "
+      + "exceeded it";
+  private static final String UNAVAILABLE = "The graph database, or another service the request depends on, is "
+      + "unavailable";
 }

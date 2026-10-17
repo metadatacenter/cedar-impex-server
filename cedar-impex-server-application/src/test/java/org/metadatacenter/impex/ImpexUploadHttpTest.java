@@ -5,7 +5,13 @@ import io.dropwizard.testing.ResourceHelpers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.apache.commons.fileupload2.core.FileUploadException;
+import org.metadatacenter.util.http.CedarResponse;
+import org.slf4j.LoggerFactory;
 import org.metadatacenter.util.json.JsonMapper;
 import org.metadatacenter.config.environment.CedarEnvironmentSource;
 import org.metadatacenter.impex.resources.ImpexServerResource;
@@ -75,6 +81,40 @@ public class ImpexUploadHttpTest {
     JsonNode error = JsonMapper.STRICT_MAPPER.readTree(response.body());
     assertEquals(400,error.path("statusCode").asInt(),response.body());
     assertEquals("Missing field: uploadId",error.path("message").asText(),response.body());
+  }
+
+  /**
+   * A request the multipart parser cannot read answers 500 with a plain message. The message carried the
+   * parser's exception, class name included. The exception is now logged under the body's errorId.
+   */
+  @Test
+  void anUnreadableMultipartRequestAnswersAPlainMessage() throws Exception {
+    var request = HttpRequest.newBuilder(URI.create("http://localhost:"+SERVER.getLocalPort()+"/command/import-cadsr-forms"))
+        .header("Authorization",TestAuthUtil.getTestUser1AuthHeader(config))
+        .header("Content-Type","multipart/form-data")
+        .POST(HttpRequest.BodyPublishers.ofString("--matrix\r\n")).build();
+    ListAppender<ILoggingEvent> log = new ListAppender<>();
+    log.start();
+    Logger logger = (Logger) LoggerFactory.getLogger(CedarResponse.class);
+    logger.addAppender(log);
+    try {
+      var response = HttpClient.newHttpClient().send(request,HttpResponse.BodyHandlers.ofString());
+      assertEquals(500,response.statusCode(),response.body());
+      JsonNode error = JsonMapper.STRICT_MAPPER.readTree(response.body());
+      assertEquals(500,error.path("statusCode").asInt(),response.body());
+      assertEquals("The multipart request could not be read",error.path("message").asText(),response.body());
+      String errorId = error.path("errorId").asText();
+      assertEquals(errorId,UUID.fromString(errorId).toString(),response.body());
+      for (String leak : java.util.List.of("Exception","fileupload","boundary")) {
+        assertFalse(response.body().contains(leak),response.body());
+      }
+      ILoggingEvent logged = log.list.stream().filter(event -> event.getFormattedMessage().contains(errorId))
+          .findFirst().orElseThrow(() -> new AssertionError("nothing was logged under "+errorId+": "+log.list));
+      assertEquals(FileUploadException.class.getName(),logged.getThrowableProxy().getClassName());
+    } finally {
+      logger.detachAppender(log);
+      log.stop();
+    }
   }
 
   static Stream<Arguments> requests() {
