@@ -5,6 +5,7 @@ import io.dropwizard.testing.ResourceHelpers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.metadatacenter.config.environment.CedarEnvironmentSource;
 import org.metadatacenter.impex.resources.ImpexServerResource;
@@ -23,6 +24,7 @@ import java.util.Map;
  * requires each to answer 401. A 404/405 means the route vanished or changed verb; any other status
  * means an endpoint lost its authentication assertion. No fixtures and no backend are involved.
  */
+@Tag("integration")
 public class ImpexRoutesRespondTest {
 
   static {

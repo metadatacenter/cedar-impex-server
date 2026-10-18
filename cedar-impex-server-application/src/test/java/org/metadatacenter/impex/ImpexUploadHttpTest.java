@@ -4,6 +4,7 @@ import io.dropwizard.testing.DropwizardTestSupport;
 import io.dropwizard.testing.ResourceHelpers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -36,6 +37,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /** Real multipart requests exercise authentication, parsing, shared assembly and HTTP error mapping. */
+@Tag("integration")
 public class ImpexUploadHttpTest {
 
   static {
