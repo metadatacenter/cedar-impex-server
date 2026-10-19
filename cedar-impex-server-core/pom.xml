@@ -112,6 +112,28 @@
         </executions>
       </plugin>
 
+      <!-- The coverage report leaves out generated classes. jsonschema2pojo writes its classes
+           directly into org.metadatacenter.impex, which holds no hand-written class, and xjc
+           writes the NCBI schema classes into top-level packages of their own. -->
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>coverage-report</id>
+            <configuration>
+              <excludes>
+                <exclude>org/metadatacenter/impex/*.class</exclude>
+                <exclude>bioproject/**</exclude>
+                <exclude>biosample/**</exclude>
+                <exclude>common/**</exclude>
+                <exclude>generated/**</exclude>
+              </excludes>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
     </plugins>
 
   </build>
