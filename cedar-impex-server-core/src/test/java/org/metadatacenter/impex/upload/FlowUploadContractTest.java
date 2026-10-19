@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.metadatacenter.util.http.CedarError;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
@@ -35,5 +36,19 @@ class FlowUploadContractTest {
   }
   @Test void uploadIdentifiersCannotAliasTheSameFolder() {
     assertThrows(BadRequestException.class, () -> FlowUploadUtil.getUploadLocalFolderPath("uploads","owner","path/id"));
+  }
+  /** A refusal keeps its message in the shared error body, where a bodyless exception carried none. */
+  @Test void refusalsKeepTheirMessageInTheSharedErrorBody() throws Exception {
+    assertSharedErrorBody("Upload identifier must be a single path segment", assertThrows(BadRequestException.class,
+        () -> FlowUploadUtil.getUploadLocalFolderPath("uploads","owner","path/id")));
+    String id = UUID.randomUUID().toString();
+    FlowUploadUtil.saveToLocalFile(data(id,1,new byte[]{1,2,3,4}), "owner", -1, root.toString());
+    assertSharedErrorBody("The upload is not complete", assertThrows(BadRequestException.class,
+        () -> UploadManager.getInstance().getUploadFilePaths("owner", id)));
+  }
+  private static void assertSharedErrorBody(String message, BadRequestException refusal) {
+    CedarError body = assertInstanceOf(CedarError.class, refusal.getResponse().getEntity());
+    assertEquals(400, body.statusCode);
+    assertEquals(message, body.message);
   }
 }
