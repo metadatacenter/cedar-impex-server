@@ -64,48 +64,53 @@ public class CadsrImportStatusManager {
       thread.setDaemon(true);
       return thread;
     });
-    Runnable cleanTask = () -> {
-      logger.info("Checking if there are any old imports that can be removed (map size: " + importStatus.size() + ")");
-      List<String> uploadIdsToBeRemoved = new ArrayList<>();
-      for (CadsrImportStatus importStatus : importStatus.values()) {
-        int countMeetsConditions = 0;
-        for (CadsrFileImportStatus fileStatus : importStatus.getFilesImportStatus().values()) {
-          // Checks if all the files that belong to the particular upload are older than the given threshold. If any
-          // of them is more recent than the threshold, we don't remove the uploadId from the map
-          // Elapsed time from a fixed instant, not LocalTime: LocalTime wraps at midnight, so an
-          // import finished shortly before midnight would be misjudged as arbitrarily old or young.
-          // Completed imports are retained for the short threshold; errored imports for the longer one, so a
-          // user has time to read the failure report. Pick the threshold by status instead of OR-ing the two
-          // (the old `age >= 10 || age >= 60` always collapsed to `age >= 10`, evicting errors after 10 min).
-          long thresholdMinutes;
-          if (fileStatus.getImportStatus() == ImportStatus.COMPLETE) {
-            thresholdMinutes = CLEAN_THRESHOLD_1_MINUTES;
-          } else if (fileStatus.getImportStatus() == ImportStatus.ERROR) {
-            thresholdMinutes = CLEAN_THRESHOLD_2_MINUTES;
-          } else {
-            break; // still PENDING or IN_PROGRESS: keep the whole upload
-          }
-          long ageMinutes = Duration.between(fileStatus.getStatusTime(), Instant.now()).toMinutes();
-          if (ageMinutes >= thresholdMinutes) {
-            countMeetsConditions++;
-          }
-          else {
-            break;
-          }
+    executor.scheduleWithFixedDelay(() -> removeExpiredImports(Instant.now()), 0, CLEAN_DELAY_MINUTES, TimeUnit.MINUTES);
+  }
+
+  /**
+   * Removes the imports every file of which ended long enough before {@code now}: ten minutes for a completed file,
+   * an hour for one in error. An import with a file still pending or in progress stays.
+   */
+  void removeExpiredImports(Instant now) {
+    logger.info("Checking if there are any old imports that can be removed (map size: " + importStatus.size() + ")");
+    List<String> uploadIdsToBeRemoved = new ArrayList<>();
+    for (CadsrImportStatus importStatus : importStatus.values()) {
+      int countMeetsConditions = 0;
+      for (CadsrFileImportStatus fileStatus : importStatus.getFilesImportStatus().values()) {
+        // Checks if all the files that belong to the particular upload are older than the given threshold. If any
+        // of them is more recent than the threshold, we don't remove the uploadId from the map
+        // Elapsed time from a fixed instant, not LocalTime: LocalTime wraps at midnight, so an
+        // import finished shortly before midnight would be misjudged as arbitrarily old or young.
+        // Completed imports are retained for the short threshold; errored imports for the longer one, so a
+        // user has time to read the failure report. Pick the threshold by status instead of OR-ing the two
+        // (the old `age >= 10 || age >= 60` always collapsed to `age >= 10`, evicting errors after 10 min).
+        long thresholdMinutes;
+        if (fileStatus.getImportStatus() == ImportStatus.COMPLETE) {
+          thresholdMinutes = CLEAN_THRESHOLD_1_MINUTES;
+        } else if (fileStatus.getImportStatus() == ImportStatus.ERROR) {
+          thresholdMinutes = CLEAN_THRESHOLD_2_MINUTES;
+        } else {
+          break; // still PENDING or IN_PROGRESS: keep the whole upload
         }
-        // Remove from map if all the files are older than one of the thresholds
-        if (countMeetsConditions == importStatus.getFilesImportStatus().size()) {
-          uploadIdsToBeRemoved.add(importStatus.getUploadId());
+        long ageMinutes = Duration.between(fileStatus.getStatusTime(), now).toMinutes();
+        if (ageMinutes >= thresholdMinutes) {
+          countMeetsConditions++;
         }
-      }
-      for (String uploadId : uploadIdsToBeRemoved) {
-        if (importStatus.containsKey(uploadId)) {
-          importStatus.remove(uploadId);
-          logger.info("UploadId removed: " + uploadId + ". Updated map size: " + importStatus.size());
+        else {
+          break;
         }
       }
-    };
-    executor.scheduleWithFixedDelay(cleanTask, 0, CLEAN_DELAY_MINUTES, TimeUnit.MINUTES);
+      // Remove from map if all the files are older than one of the thresholds
+      if (countMeetsConditions == importStatus.getFilesImportStatus().size()) {
+        uploadIdsToBeRemoved.add(importStatus.getUploadId());
+      }
+    }
+    for (String uploadId : uploadIdsToBeRemoved) {
+      if (importStatus.containsKey(uploadId)) {
+        importStatus.remove(uploadId);
+        logger.info("UploadId removed: " + uploadId + ". Updated map size: " + importStatus.size());
+      }
+    }
   }
 
   public CadsrImportStatus getStatus(String uploadId) {

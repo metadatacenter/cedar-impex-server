@@ -15,8 +15,8 @@
   <name>CEDAR ImpEx Server Core</name>
 
   <properties>
-    <!-- Line coverage measured on 2026-10-19: 13.3%. The build fails below this floor. -->
-    <cedar.coverage.line.minimum>0.11</cedar.coverage.line.minimum>
+    <!-- Line coverage measured on 2026-10-19: 81.6%. The build fails below this floor. -->
+    <cedar.coverage.line.minimum>0.79</cedar.coverage.line.minimum>
   </properties>
 
   <dependencies>
