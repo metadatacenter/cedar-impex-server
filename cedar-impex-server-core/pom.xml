@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.metadatacenter</groupId>
     <artifactId>cedar-impex-server</artifactId>
-    <version>2.9.26</version>
+    <version>2.9.27</version>
   </parent>
 
   <groupId>org.metadatacenter</groupId>
@@ -13,6 +13,11 @@
   <packaging>jar</packaging>
 
   <name>CEDAR ImpEx Server Core</name>
+
+  <properties>
+    <!-- Line coverage measured on 2026-10-19: 81.6%. The build fails below this floor. -->
+    <cedar.coverage.line.minimum>0.79</cedar.coverage.line.minimum>
+  </properties>
 
   <dependencies>
 
@@ -110,6 +115,25 @@
             </configuration>
           </execution>
         </executions>
+      </plugin>
+
+      <!-- The coverage report leaves out generated classes. jsonschema2pojo writes its classes
+           directly into org.metadatacenter.impex, which holds no hand-written class, and xjc
+           writes the NCBI schema classes into top-level packages of their own. -->
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <!-- On the plugin rather than one execution, so the report and the coverage check count the
+             same classes. -->
+        <configuration>
+          <excludes>
+            <exclude>org/metadatacenter/impex/*.class</exclude>
+            <exclude>bioproject/**</exclude>
+            <exclude>biosample/**</exclude>
+            <exclude>common/**</exclude>
+            <exclude>generated/**</exclude>
+          </excludes>
+        </configuration>
       </plugin>
 
     </plugins>
