@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -26,6 +27,7 @@ import org.metadatacenter.impex.exception.UploadInstanceNotFoundException;
 import org.metadatacenter.impex.imp.cadsr.CadsrImportStatus;
 import org.metadatacenter.impex.imp.cadsr.CadsrImportStatusManager;
 import org.metadatacenter.impex.imp.cadsr.CadsrImportStatusManager.ImportStatus;
+import org.metadatacenter.impex.resources.swaggermodel.CadsrImportStatusesByUpload;
 import org.metadatacenter.impex.upload.FlowData;
 import org.metadatacenter.impex.upload.FlowUploadUtil;
 import org.metadatacenter.impex.upload.UploadManager;
@@ -84,6 +86,9 @@ public class ImpexServerResource extends CedarMicroserviceResource {
           + "in the background, so a 200 means the chunk was stored and any import it completed was "
           + "started, not that a template exists yet. Poll the import status to find out how it "
           + "went.")
+  @RequestBody(description = "One chunk of one file, with the fields that place it in its upload", required = true,
+      content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA,
+          schema = @Schema(ref = "#/components/schemas/CadsrFormUploadChunk")))
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "The chunk was stored; any import it completed has been started"),
       @ApiResponse(responseCode = "400", description = "The request is not a multipart upload, or the chunk is "
@@ -242,7 +247,9 @@ public class ImpexServerResource extends CedarMicroserviceResource {
           + "belonging to someone else is reported as not found rather than refused, so this cannot "
           + "be used to discover another user's imports.")
   @ApiResponses({
-      @ApiResponse(responseCode = "200", description = "The import status, or every status for the caller"),
+      @ApiResponse(responseCode = "200", description = "With an upload identifier, that upload's status. Without "
+          + "one, every import the caller has run, keyed by upload identifier.",
+          content = @Content(schema = @Schema(oneOf = {CadsrImportStatus.class, CadsrImportStatusesByUpload.class}))),
       @ApiResponse(responseCode = "401", description = UNAUTHORIZED,
           content = @Content(schema = @Schema(implementation = CedarError.class))),
       @ApiResponse(responseCode = "404", description = "The caller has no upload with this identifier",

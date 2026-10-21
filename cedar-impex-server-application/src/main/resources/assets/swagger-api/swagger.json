@@ -37,6 +37,17 @@
             "type" : "string"
           }
         } ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CadsrFormUploadChunk"
+              }
+            }
+          },
+          "description" : "One chunk of one file, with the fields that place it in its upload",
+          "required" : true
+        },
         "responses" : {
           "200" : {
             "description" : "The chunk was stored; any import it completed has been started"
@@ -133,7 +144,18 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "The import status, or every status for the caller"
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "oneOf" : [ {
+                    "$ref" : "#/components/schemas/CadsrImportStatus"
+                  }, {
+                    "$ref" : "#/components/schemas/CadsrImportStatusesByUpload"
+                  } ]
+                }
+              }
+            },
+            "description" : "With an upload identifier, that upload's status. Without one, every import the caller has run, keyed by upload identifier."
           },
           "401" : {
             "content" : {
@@ -510,6 +532,133 @@
   },
   "components" : {
     "schemas" : {
+      "CadsrFileImportStatus" : {
+        "type" : "object",
+        "additionalProperties" : false,
+        "description" : "How the import of one uploaded file is going.",
+        "properties" : {
+          "fileName" : {
+            "type" : "string",
+            "description" : "The file's name, without any directory part."
+          },
+          "importStatus" : {
+            "type" : "string",
+            "description" : "Where the file's import stands: waiting to start, being translated, saved as a template, or failed.",
+            "enum" : [ "PENDING", "IN_PROGRESS", "COMPLETE", "ERROR" ]
+          },
+          "report" : {
+            "type" : "string",
+            "description" : "The messages the translation produced, separated by line breaks. Empty until there are any."
+          },
+          "statusTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "When the status last changed."
+          }
+        },
+        "required" : [ "fileName", "importStatus", "report", "statusTime" ]
+      },
+      "CadsrFormUploadChunk" : {
+        "type" : "object",
+        "description" : "One chunk of one file, sent as Flow.js sends it. An upload can hold several files, and each file arrives as one or more chunks. Every chunk repeats the fields that place it in its file and its file in the upload, and a chunk that disagrees with an earlier one is refused. Other form fields are ignored.",
+        "properties" : {
+          "file" : {
+            "type" : "string",
+            "format" : "binary",
+            "description" : "The chunk's bytes, as the request's only file part."
+          },
+          "flowChunkNumber" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "This chunk's position in the file, counting from 1.",
+            "minimum" : 1
+          },
+          "flowChunkSize" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The size in bytes of every chunk of the file except the last.",
+            "maximum" : 5368709120,
+            "minimum" : 1
+          },
+          "flowCurrentChunkSize" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The size in bytes of this chunk. It must match the chunk sent, and equals the chunk size for every chunk but the last, which holds what remains of the file.",
+            "minimum" : 0
+          },
+          "flowFilename" : {
+            "type" : "string",
+            "description" : "The file's name. Any directory part is dropped, and no two files in one upload may have the same name."
+          },
+          "flowIdentifier" : {
+            "type" : "string",
+            "description" : "Identifies the file within the upload."
+          },
+          "flowRelativePath" : {
+            "type" : "string",
+            "description" : "The file's path on the client. It is required and otherwise unused."
+          },
+          "flowTotalChunks" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "How many chunks the file is sent in: its size divided by the chunk size, rounded either down or up.",
+            "minimum" : 1
+          },
+          "flowTotalSize" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The file's size in bytes.",
+            "maximum" : 5368709120,
+            "minimum" : 0
+          },
+          "numberOfFiles" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "How many files the upload holds. The import starts once all of them have arrived.",
+            "minimum" : 1
+          },
+          "uploadId" : {
+            "type" : "string",
+            "description" : "Identifies the upload. Every chunk of every file in the upload carries the same value, which must be a single path segment. The import status is reported under it."
+          }
+        },
+        "required" : [ "file", "flowChunkNumber", "flowChunkSize", "flowCurrentChunkSize", "flowFilename", "flowIdentifier", "flowRelativePath", "flowTotalChunks", "flowTotalSize", "numberOfFiles", "uploadId" ]
+      },
+      "CadsrImportStatus" : {
+        "type" : "object",
+        "additionalProperties" : false,
+        "description" : "How the import of one upload is going, file by file.",
+        "properties" : {
+          "destinationCedarFolderId" : {
+            "type" : "string",
+            "description" : "The folder the templates are created in. It is null when the caller named no folder and has no home folder yet.",
+            "nullable" : true
+          },
+          "filesImportStatus" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/CadsrFileImportStatus"
+            },
+            "description" : "Each file's import, keyed by file name."
+          },
+          "ownerUserId" : {
+            "type" : "string",
+            "description" : "The user who ran the import. No other user is shown it."
+          },
+          "uploadId" : {
+            "type" : "string",
+            "description" : "Identifies the upload, as its chunks named it."
+          }
+        },
+        "required" : [ "destinationCedarFolderId", "filesImportStatus", "ownerUserId", "uploadId" ]
+      },
+      "CadsrImportStatusesByUpload" : {
+        "type" : "object",
+        "additionalProperties" : {
+          "$ref" : "#/components/schemas/CadsrImportStatus"
+        },
+        "description" : "Every import the caller has run, keyed by upload identifier."
+      },
       "CedarError" : {
         "type" : "object",
         "additionalProperties" : false,

@@ -22,6 +22,83 @@ info:
     endpoint is how a caller learns what became of each file.
   version: ${project.version}
 components:
+  schemas:
+    CadsrFormUploadChunk:
+      type: object
+      description: >-
+        One chunk of one file, sent as Flow.js sends it. An upload can hold several files, and each
+        file arrives as one or more chunks. Every chunk repeats the fields that place it in its file
+        and its file in the upload, and a chunk that disagrees with an earlier one is refused. Other
+        form fields are ignored.
+      required:
+        - uploadId
+        - numberOfFiles
+        - flowIdentifier
+        - flowFilename
+        - flowRelativePath
+        - flowTotalSize
+        - flowChunkSize
+        - flowTotalChunks
+        - flowChunkNumber
+        - flowCurrentChunkSize
+        - file
+      properties:
+        uploadId:
+          type: string
+          description: >-
+            Identifies the upload. Every chunk of every file in the upload carries the same value,
+            which must be a single path segment. The import status is reported under it.
+        numberOfFiles:
+          type: integer
+          format: int64
+          minimum: 1
+          description: How many files the upload holds. The import starts once all of them have arrived.
+        flowIdentifier:
+          type: string
+          description: Identifies the file within the upload.
+        flowFilename:
+          type: string
+          description: >-
+            The file's name. Any directory part is dropped, and no two files in one upload may have
+            the same name.
+        flowRelativePath:
+          type: string
+          description: The file's path on the client. It is required and otherwise unused.
+        flowTotalSize:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 5368709120
+          description: The file's size in bytes.
+        flowChunkSize:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 5368709120
+          description: The size in bytes of every chunk of the file except the last.
+        flowTotalChunks:
+          type: integer
+          format: int64
+          minimum: 1
+          description: >-
+            How many chunks the file is sent in: its size divided by the chunk size, rounded either
+            down or up.
+        flowChunkNumber:
+          type: integer
+          format: int64
+          minimum: 1
+          description: This chunk's position in the file, counting from 1.
+        flowCurrentChunkSize:
+          type: integer
+          format: int64
+          minimum: 0
+          description: >-
+            The size in bytes of this chunk. It must match the chunk sent, and equals the chunk size
+            for every chunk but the last, which holds what remains of the file.
+        file:
+          type: string
+          format: binary
+          description: The chunk's bytes, as the request's only file part.
   securitySchemes:
     api_key:
       type: apiKey

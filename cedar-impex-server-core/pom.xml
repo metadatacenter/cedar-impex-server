@@ -49,6 +49,15 @@
       <artifactId>cedar-server-rest-library</artifactId>
     </dependency>
 
+    <!-- Carries the OpenAPI annotations on the import-status beans the status route serializes.
+         Jackson introspection alone describes them as open objects whose keys may be absent, which
+         leaves the route's two answers indistinguishable. Documentation only: no runtime code reads
+         them. Version managed in cedar-parent. -->
+    <dependency>
+      <groupId>io.swagger.core.v3</groupId>
+      <artifactId>swagger-annotations-jakarta</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
