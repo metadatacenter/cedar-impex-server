@@ -1,7 +1,11 @@
 package org.metadatacenter.impex.imp.cadsr;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import java.time.Instant;
 
+@Schema(description = "How the import of one uploaded file is going.",
+    additionalProperties = Schema.AdditionalPropertiesValue.FALSE)
 public class CadsrFileImportStatus {
 
   private String fileName;
@@ -16,6 +20,8 @@ public class CadsrFileImportStatus {
     this.report = report;
   }
 
+  @Schema(requiredMode = Schema.RequiredMode.REQUIRED,
+      description = "The file's name, without any directory part.")
   public String getFileName() {
     return fileName;
   }
@@ -24,6 +30,9 @@ public class CadsrFileImportStatus {
     this.fileName = fileName;
   }
 
+  @Schema(requiredMode = Schema.RequiredMode.REQUIRED,
+      description = "Where the file's import stands: waiting to start, being translated, saved as a "
+          + "template, or failed.")
   public CadsrImportStatusManager.ImportStatus getImportStatus() {
     return importStatus;
   }
@@ -32,6 +41,8 @@ public class CadsrFileImportStatus {
     this.importStatus = importStatus;
   }
 
+  @Schema(requiredMode = Schema.RequiredMode.REQUIRED,
+      description = "When the status last changed.")
   public Instant getStatusTime() {
     return statusTime;
   }
@@ -40,6 +51,9 @@ public class CadsrFileImportStatus {
     this.statusTime = statusTime;
   }
 
+  @Schema(requiredMode = Schema.RequiredMode.REQUIRED,
+      description = "The messages the translation produced, separated by line breaks. Empty until "
+          + "there are any.")
   public String getReport() {
     return report;
   }
