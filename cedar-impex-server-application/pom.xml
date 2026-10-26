@@ -20,6 +20,8 @@
     <cedar.shade.main.class>org.metadatacenter.impex.ImpexServerApplication</cedar.shade.main.class>
     <!-- Line coverage measured on 2026-10-19: 78.8%. The build fails below this floor. -->
     <cedar.coverage.line.minimum>0.76</cedar.coverage.line.minimum>
+    <!-- Branch coverage measured on 2026-10-26: 87.5%. The build fails below this floor. -->
+    <cedar.coverage.branch.minimum>0.85</cedar.coverage.branch.minimum>
   </properties>
 
   <dependencies>
